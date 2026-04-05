@@ -1,0 +1,17 @@
+# Virtual environments
+venv/
+
+# Environment variables (contains MySQL password [DO NOT COMMIT])
+.env
+
+# Python cache files (auto-generated)
+__pycache__/
+*.pyc
+*.pyo
+
+# VS code settings (personalized, not to be shared)
+.vscode/
+
+# Database files (if any local database files are created, ignore them)
+*.db
+*.sqlite

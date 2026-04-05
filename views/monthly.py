@@ -20,31 +20,31 @@ def monthly_summary():
         trains  = int(summary["train_count"]   or 0)
         diff    = total - CONCESSION_THRESHOLD
 
-        print(f"  {MONTHS[month]} {year}")
+        print(f"\t{MONTHS[month]} {year}")
         print("-" * 40)
-        print(f"  Total spent : ${total:.2f} / ${CONCESSION_THRESHOLD:.2f}")
+        print(f"\tTotal spent : ${total:.2f} / ${CONCESSION_THRESHOLD:.2f}")
 
         if diff >= 0:
-            print(f"  Savings     : +${diff:.2f}  (concession covered!)")
+            print(f"\tSavings\t: +${diff:.2f}\t(concession covered!)")
         else:
-            print(f"  Remaining   : ${abs(diff):.2f} to break even")
+            print(f"\tRemaining\t: ${abs(diff):.2f} to break even")
 
-        print(f"  Total trips : {trips}")
-        print(f"  Bus trips   : {buses}")
-        print(f"  Train trips : {trains}")
+        print(f"\tTotal trips : {trips}")
+        print(f"\tBus trips   : {buses}")
+        print(f"\tTrain trips : {trains}")
 
         if buses > trains:
-            print(f"  Favoured    : Bus")
+            print(f"\tFavoured\t: Bus")
         elif trains > buses:
-            print(f"  Favoured    : Train")
+            print(f"\tFavoured\t: Train")
         else:
-            print(f"  Favoured    : Tied")
+            print(f"\tFavoured\t: Tied")
 
         print()
 
         rows = get_trips_by_month(year, month)
         if not rows:
-            print("  No trips this month.")
+            print("\tNo trips this month.")
         else:
             table_rows = []
             for row in rows:
@@ -59,35 +59,35 @@ def monthly_summary():
             draw_table(["ID", "Mode", "From", "To", "Fare", "Date"], table_rows)
 
         print()
-        print("  [P] Prev month   [N] Next month   [D] Delete trip   [B] Back")
+        print("\t[P] Prev month\t[N] Next month\t[D] Delete trip]\t[B] Back")
         print()
-        choice = input("  Choice: ").strip().upper()
+        choice = input("\tChoice: ").strip().lower()
 
-        if choice == "B" or choice == "":
+        if choice == "b" or choice == "":
             break
-        elif choice == "P":
+        elif choice == "p":
             if month == 1:
                 month = 12
                 year -= 1
             else:
                 month -= 1
-        elif choice == "N":
+        elif choice == "n":
             if year == today.year and month == today.month:
-                input("  Already on current month. Press Enter...")
+                input("\tAlready on current month. Press Enter...")
             elif month == 12:
                 month = 1
                 year += 1
             else:
                 month += 1
-        elif choice == "D":
-            trip_id = input("  Enter trip ID to delete (e.g. 3): ").strip()
+        elif choice == "d":
+            trip_id = input("\tEnter trip ID to delete (e.g. 3): ").strip()
             try:
                 if delete_trip(int(trip_id)):
-                    print(f"  ✓ Trip #{trip_id} deleted.")
+                    print(f"\t✓ Trip #{trip_id} deleted.")
                 else:
-                    print("  Trip not found.")
+                    print("\tTrip not found.")
             except ValueError:
-                print("  Invalid ID.")
-            input("  Press Enter to continue...")
+                print("\tInvalid ID.")
+            input("\tPress Enter to continue...")
         else:
-            input("  Invalid choice. Press Enter to try again...")
+            input("\tInvalid choice. Press Enter to try again...")

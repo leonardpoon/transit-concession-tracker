@@ -6,14 +6,14 @@ from utils import clear, draw_table, header
 def all_history():
     clear()
     header()
-    print("  All History")
+    print("\tAll History")
     print("-" * 40)
 
     months = get_months_with_data()
 
     if not months:
-        print("  No data yet.")
-        input("\n  Press Enter to go back...")
+        print("\tNo data yet.")
+        input("\n\tPress Enter to go back...")
         return
 
     rows = []
@@ -52,4 +52,4 @@ def all_history():
         rows,
     )
 
-    input("\n  Press Enter to go back...")
+    input("\n\tPress Enter to go back...")

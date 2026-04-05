@@ -19,7 +19,7 @@ def main_menu():
         print("\t[4] Exit")
         print()
 
-        choice = input("Enter your choice: ").strip()
+        choice = input("\tEnter your choice: ").strip()
 
         if choice == "1":
             log_trip()
@@ -31,7 +31,7 @@ def main_menu():
             print("\nGoodbye!")
             sys.exit()
         else:
-            print("Invalid choice. Press Enter to try again.")
+            input("\tInvalid choice. Press Enter to try again.")
 
 if __name__ == "__main__":
     try:

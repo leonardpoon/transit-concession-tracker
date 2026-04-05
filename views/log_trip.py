@@ -1,20 +1,20 @@
 from datetime import date, datetime
 
 from db.queries import get_all_locations, get_recent_routes, insert_trip
-from utils import clear, draw_table, format_date_display, header
+from utils import clear, draw_table, format_date_display, header, confirm_prompt, find_similar_location
 
 
 def log_trip():
     clear()
     header()
-    print("  Log Single Trip")
+    print("\tLog Single Trip")
     print("-" * 40)
 
     # Show recent routes
     recent = get_recent_routes()
     if recent:
         print()
-        print("  Recent routes:")
+        print("\tRecent routes:")
         rows = []
         for i, r in enumerate(recent, 1):
             rows.append([
@@ -25,10 +25,10 @@ def log_trip():
                 f"${float(r['fare']):.2f}",
             ])
         draw_table(["", "Mode", "From", "To", "Fare"], rows)
-        print("  [M] Enter manually")
+        print("\t[M] Enter manually")
         print()
 
-        choice = input("  Choice: ").strip().upper()
+        choice = input("\tChoice: ").strip().upper()
 
         if choice == "M":
             _manual_entry()
@@ -44,7 +44,7 @@ def log_trip():
 def _quick_log(route):
     clear()
     header()
-    print("  Quick Log")
+    print("\tQuick Log")
     print("-" * 40)
     print()
     draw_table(
@@ -70,19 +70,19 @@ def _quick_log(route):
     )
 
     print()
-    print(f"  ✓ Saved! Trip #{trip_id} on {format_date_display(trip_date)}")
-    input("\n  Press Enter to go back...")
+    print(f"\t✓ Saved! Trip #{trip_id} on {format_date_display(trip_date)}")
+    input("\n\tPress Enter to go back...")
 
 
 def _manual_entry():
     clear()
     header()
-    print("  Manual Entry")
+    print("\tManual Entry")
     print("-" * 40)
 
     # Mode
     while True:
-        mode = input("\n  Mode (B = Bus, T = Train): ").strip().upper()
+        mode = input("\n\tMode (B = Bus, T = Train): ").strip().upper()
         if mode == "B":
             mode = "Bus"
             break
@@ -90,48 +90,50 @@ def _manual_entry():
             mode = "Train"
             break
         else:
-            print("  Please enter B or T")
+            print("\tPlease enter B or T")
 
     locations = get_all_locations()
 
     # Origin
-    origin = input("  From: ").strip()
+    origin = input("\tStarting Location: ").strip()
     if origin == "":
-        print("  Starting location cannot be empty.")
-        input("  Press Enter to go back...")
+        print("\tStarting location cannot be empty.")
+        input("\tPress Enter to go back...")
         return
     if origin not in locations:
-        confirm = input(f"  '{origin}' is new. Save anyway? (y/n): ").strip().lower()
-        if confirm != "y":
-            input("  Cancelled. Press Enter to go back...")
-            return
+        similar = find_similar_location(origin, locations)
+        if similar:
+            if not confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
+                if not confirm_prompt(f"\t'{origin}' as a new location? (yes/no): "):
+                    return None
 
     # Destination
-    destination = input("  To: ").strip()
+    destination = input("\tEnding Location: ").strip()
     if destination == "":
-        print("  Ending location cannot be empty.")
-        input("  Press Enter to go back...")
+        print("\tEnding location cannot be empty.")
+        input("\tPress Enter to go back...")
         return
     if destination not in locations:
-        confirm = input(f"  '{destination}' is new. Save anyway? (y/n): ").strip().lower()
-        if confirm != "y":
-            input("  Cancelled. Press Enter to go back...")
-            return
+        similar = find_similar_location(destination, locations)
+        if similar:
+            if not confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
+                if not confirm_prompt(f"\t'{destination}' as a new location? (yes/no): "):
+                    return None
 
     if origin.lower() == destination.lower():
-        print("  Start and end location cannot be the same.")
-        input("  Press Enter to go back...")
+        print("\tStart and end location cannot be the same.")
+        input("\tPress Enter to go back...")
         return
 
     # Fare
     while True:
         try:
-            fare = float(input("  Fare ($): ").strip())
+            fare = float(input("\tFare ($): ").strip())
             if fare <= 0:
                 raise ValueError
             break
         except ValueError:
-            print("  Please enter a valid amount e.g. 1.50")
+            print("\tPlease enter a valid amount e.g. 1.50")
 
     # Date
     trip_date = _get_date()
@@ -140,15 +142,15 @@ def _manual_entry():
 
     trip_id = insert_trip(mode, origin, destination, fare, trip_date)
     print()
-    print(f"  ✓ Saved! Trip #{trip_id}")
-    print(f"  {mode} | {origin} → {destination} | ${fare:.2f} | {format_date_display(trip_date)}")
-    input("\n  Press Enter to go back...")
+    print(f"\t✓ Saved! Trip #{trip_id}")
+    print(f"\t{mode} | {origin} → {destination}\t|\t${fare:.2f}\t|\t{format_date_display(trip_date)}")
+    input("\n\tPress Enter to go back...")
 
 
 def _get_date():
     today = date.today()
     today_display = today.strftime("%d-%m-%Y")
-    date_input = input(f"\n  Date (DD-MM-YYYY) [press Enter for today: {today_display}]: ").strip()
+    date_input = input(f"\n\tDate (DD-MM-YYYY) [press Enter for today: {today_display}]: ").strip()
 
     if date_input == "":
         return str(today)
@@ -157,6 +159,6 @@ def _get_date():
         dt = datetime.strptime(date_input, "%d-%m-%Y")
         return dt.strftime("%Y-%m-%d")
     except ValueError:
-        print("  Invalid date. Use DD-MM-YYYY e.g. 07-04-2026")
-        input("  Press Enter to go back...")
+        print("\tInvalid date. Use DD-MM-YYYY e.g. 07-12-2026")
+        input("\tPress Enter to go back...")
         return None

@@ -1,4 +1,5 @@
 import os
+import difflib
 from datetime import date
 
 from config import CONCESSION_THRESHOLD, MONTHS
@@ -93,3 +94,20 @@ def collect_dates():
             print("  Invalid format. Use DD-MM-YYYY e.g. 07-04-2026")
 
     return dates
+
+def confirm_prompt(message="\tConfirm? (yes/no): "):
+    while True:
+        answer = input(message).strip().lower()
+        if answer in ("yes", "y"):
+            return True
+        elif answer in ("no", "n"):
+            return False
+        else:
+            print("\tPlease type yes or no.")
+
+
+def find_similar_location(name, locations, threshold = 0.8):
+    matches = difflib.get_close_matches(name, locations, n = 1, cutoff = threshold)
+    if matches:
+        return matches[0]
+    return None
