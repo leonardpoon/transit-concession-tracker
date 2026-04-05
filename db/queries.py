@@ -165,3 +165,56 @@ def get_months_with_data():
     cursor.close()
     conn.close()
     return rows
+
+def search_trips(query = "", mode = "", start_date = "", end_date = ""):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    conditions = []
+    params = []
+
+    if query:
+        conditions.append("(origin LIKE %s OR destination LIKE %s)")
+        params += [f"%{query}%", f"%{query}%"]
+    if mode and mode != "all":
+        conditions.append("mode = %s")
+        params.append(mode)
+    if start_date:
+        conditions.append("trip_date >= %s")
+        params.append(start_date)
+    if end_date:
+        conditions.append("trip_date <= %s")
+        params.append(end_date)
+
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+    cursor.execute(
+        f"SELECT id, mode, origin, destination, fare, trip_date "
+        f"FROM trips {where} "
+        f"ORDER BY trip_date DESC LIMIT 100",
+        params,
+    )
+
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
+
+def update_trip(trip_id, mode, origin, destination, fare, trip_date):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE trips "
+        "SET mode = %s, origin = %s, destination = %s, "
+        "fare = %s, trip_date = %s "
+        "WHERE id =  %s",
+        (mode, origin, destination, fare, trip_date, trip_id)
+    )
+
+    conn.commit()
+    affected = cursor.rowcount
+    cursor.close()
+    conn.close()
+    return affected > 0
+                         

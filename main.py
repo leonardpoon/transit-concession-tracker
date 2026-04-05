@@ -2,8 +2,14 @@ import sys
 
 from db.connection import init_schema
 from views.log_trip import log_trip
+from views.repeat_days import repeat_days
+from views.log_day import log_day
 from views.monthly import monthly_summary
 from views.history import all_history
+from views.csv_import import csv_import
+from views.search import search
+from views.edit_trip import edit_trip
+
 from utils import clear, header, show_monthly_status
 from config import MONTHS
 from datetime import date
@@ -14,9 +20,14 @@ def main_menu():
         header()
         show_monthly_status()
         print("\t[1] Log New Trip")
-        print("\t[2] View This Month's Summary")
-        print("\t[3] View All History")
-        print("\t[4] Exit")
+        print("\t[2] Log a Full Day")
+        print("\t[3] Repeat a Past Day")
+        print("\t[4] View This Month's Summary")
+        print("\t[5] View All History")
+        print("\t[6] Search Trips")
+        print("\t[7] Edit a Trip")
+        print("\t[8] Import from CSV")
+        print("\t[9] Exit")
         print()
 
         choice = input("\tEnter your choice: ").strip()
@@ -24,10 +35,20 @@ def main_menu():
         if choice == "1":
             log_trip()
         elif choice == "2":
-            monthly_summary()
+            log_day()
         elif choice == "3":
-            all_history()
+            repeat_days()
         elif choice == "4":
+            monthly_summary()
+        elif choice == "5":
+            all_history()
+        elif choice == "6":
+            search()
+        elif choice == "7":
+            edit_trip()
+        elif choice == "8":
+            csv_import()
+        elif choice == "9":
             print("\nGoodbye!")
             sys.exit()
         else:
