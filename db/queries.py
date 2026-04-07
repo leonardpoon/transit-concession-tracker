@@ -1,13 +1,13 @@
 from db.connection import get_connection
 
-def insert_trip(mode, origin, destination, fare, trip_date):
+def insert_trip(mode_of_transport, starting_location, ending_location, total_price, date):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT INTO trips (mode, origin, destination, fare, trip_date) "
+        "INSERT INTO trips (mode_of_transport, starting_location, ending_location, total_price, date) "
         "VALUES (%s, %s, %s, %s, %s)",
-        (mode, origin.strip(), destination.strip(), fare, trip_date)
+        (mode_of_transport, starting_location.strip(), ending_location.strip(), total_price, date)
     )
 
     conn.commit()
@@ -21,10 +21,10 @@ def get_trips_by_month(year, month):
     cursor = conn.cursor(dictionary=True)
     
     cursor.execute(
-        "SELECT id, mode, origin, destination, fare, trip_date "
+        "SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
         "FROM trips "
-        "WHERE YEAR(trip_date) = %s AND MONTH(trip_date) = %s "
-        "ORDER BY trip_date DESC",
+        "WHERE YEAR(date) = %s AND MONTH(date) = %s "
+        "ORDER BY date DESC",
         (year, month)
     )
 
@@ -39,12 +39,12 @@ def get_monthly_summary(year, month):
 
     cursor.execute(
         "SELECT "
-        "  COALESCE(SUM(fare), 0)                           AS total, "
+        "  COALESCE(SUM(total_price), 0)                           AS total, "
         "  COUNT(*)                                         AS trip_count, "
-        "  SUM(CASE WHEN mode = 'Bus'   THEN 1 ELSE 0 END) AS bus_count, "
-        "  SUM(CASE WHEN mode = 'Train' THEN 1 ELSE 0 END) AS train_count "
+        "  SUM(CASE WHEN mode_of_transport = 'Bus'   THEN 1 ELSE 0 END) AS bus_count, "
+        "  SUM(CASE WHEN mode_of_transport = 'Train' THEN 1 ELSE 0 END) AS train_count "
         "FROM trips "
-        "WHERE YEAR(trip_date) = %s AND MONTH(trip_date) = %s",
+        "WHERE YEAR(date) = %s AND MONTH(date) = %s",
         (year, month)
     )
 
@@ -59,9 +59,9 @@ def get_all_locations():
 
     cursor.execute(
         "SELECT DISTINCT location FROM ("
-        "  SELECT origin AS location FROM trips "
+        "  SELECT starting_location AS location FROM trips "
         "  UNION "
-        "  SELECT destination AS location FROM trips"
+        "  SELECT ending_location AS location FROM trips"
         ") sub ORDER BY location"
     )
 
@@ -86,12 +86,12 @@ def get_recent_days(limit=5):
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute(
-        "SELECT trip_date, "
+        "SELECT date, "
         "COUNT(*) AS trip_count, "
-        "SUMM(fare) AS total_fare "
+        "SUM(total_price) AS total_price "
         "FROM trips "
-        "GROUP BY trip_date "
-        "ORDER BY trip_date DESC "
+        "GROUP BY date "
+        "ORDER BY date DESC "
         "LIMIT %s",
         (limit,)
     )
@@ -106,9 +106,9 @@ def get_trips_by_date(trip_date):
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute(
-        "SELECT mode, origin, destination, fare "
+        "SELECT mode_of_transport, starting_location, ending_location, total_price "
         "FROM trips "
-        "WHERE trip_date = %s "
+        "WHERE date = %s "
         "ORDER BY created_at DESC",
         (trip_date,)
     )
@@ -123,7 +123,7 @@ def insert_trips_bulk(trips):
     cursor = conn.cursor()
 
     cursor.executemany(
-        "INSERT INTO trips (mode, origin, destination, fare, trip_date) "
+        "INSERT INTO trips (mode_of_transport, starting_location, ending_location, total_price, date) "
         "VALUES (%s, %s, %s, %s, %s)",
         trips
     )
@@ -139,9 +139,9 @@ def get_recent_routes(limit=5):
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute(
-        "SELECT mode, origin, destination, fare "
+        "SELECT mode_of_transport, starting_location, ending_location, total_price "
         "FROM trips "
-        "GROUP BY mode, origin, destination, fare "
+        "GROUP BY mode_of_transport, starting_location, ending_location, total_price "
         "ORDER BY MAX(created_at) DESC "
         "LIMIT %s",
         (limit,)
@@ -157,7 +157,7 @@ def get_months_with_data():
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT DISTINCT YEAR(trip_date) AS y, MONTH(trip_date) AS m "
+        "SELECT DISTINCT YEAR(date) AS y, MONTH(date) AS m "
         "FROM trips ORDER BY y DESC, m DESC"
     )
 
@@ -174,24 +174,24 @@ def search_trips(query = "", mode = "", start_date = "", end_date = ""):
     params = []
 
     if query:
-        conditions.append("(origin LIKE %s OR destination LIKE %s)")
+        conditions.append("(starting_location LIKE %s OR ending_location LIKE %s)")
         params += [f"%{query}%", f"%{query}%"]
     if mode and mode != "all":
-        conditions.append("mode = %s")
+        conditions.append("mode_of_transport = %s")
         params.append(mode)
     if start_date:
-        conditions.append("trip_date >= %s")
+        conditions.append("date >= %s")
         params.append(start_date)
     if end_date:
-        conditions.append("trip_date <= %s")
+        conditions.append("date <= %s")
         params.append(end_date)
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
     cursor.execute(
-        f"SELECT id, mode, origin, destination, fare, trip_date "
+        f"SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
         f"FROM trips {where} "
-        f"ORDER BY trip_date DESC LIMIT 100",
+        f"ORDER BY date DESC LIMIT 100",
         params,
     )
 
@@ -200,16 +200,16 @@ def search_trips(query = "", mode = "", start_date = "", end_date = ""):
     conn.close()
     return rows
 
-def update_trip(trip_id, mode, origin, destination, fare, trip_date):
+def update_trip(trip_id, mode_of_transport, starting_location, ending_location, total_price, date):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute(
         "UPDATE trips "
-        "SET mode = %s, origin = %s, destination = %s, "
-        "fare = %s, trip_date = %s "
+        "SET mode_of_transport = %s, starting_location = %s, ending_location = %s, "
+        "total_price = %s, date = %s "
         "WHERE id =  %s",
-        (mode, origin, destination, fare, trip_date, trip_id)
+        (mode_of_transport, starting_location, ending_location, total_price, date, trip_id)
     )
 
     conn.commit()

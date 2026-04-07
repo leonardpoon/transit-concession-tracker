@@ -14,11 +14,11 @@ def init_schema():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS trips (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            mode ENUM('Bus', 'Train') NOT NULL,
-            origin VARCHAR(255) NOT NULL,
-            destination VARCHAR(255) NOT NULL,
-            fare DECIMAL(10, 2) NOT NULL,
-            trip_date DATE NOT NULL,
+            mode_of_transport ENUM('Bus', 'Train') NOT NULL,
+            starting_location VARCHAR(255) NOT NULL,
+            ending_location VARCHAR(255) NOT NULL,
+            total_price DECIMAL(10, 2) NOT NULL,
+            date DATE NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
