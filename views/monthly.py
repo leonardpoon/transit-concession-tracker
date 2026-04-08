@@ -25,20 +25,20 @@ def monthly_summary():
         print(f"\tTotal spent : ${total:.2f} / ${CONCESSION_THRESHOLD:.2f}")
 
         if diff >= 0:
-            print(f"\tSavings\t: +${diff:.2f}\t(concession covered!)")
+            print(f"\tSavings :\t +${diff:.2f}\t(concession Profited!)")
         else:
-            print(f"\tRemaining\t: ${abs(diff):.2f} to break even")
+            print(f"\tRemaining :\t ${abs(diff):.2f} to break even")
 
-        print(f"\tTotal trips : {trips}")
-        print(f"\tBus trips   : {buses}")
-        print(f"\tTrain trips : {trains}")
+        print(f"\tTotal trips :\t {trips}")
+        print(f"\tBus trips   :\t {buses}")
+        print(f"\tTrain trips :\t {trains}")
 
         if buses > trains:
-            print(f"\tFavoured\t: Bus")
+            print(f"\tFavoured  :\t Bus")
         elif trains > buses:
-            print(f"\tFavoured\t: Train")
+            print(f"\tFavoured  :\t Train")
         else:
-            print(f"\tFavoured\t: Tied")
+            print(f"\tFavoured  :\t Tied")
 
         print()
 
@@ -54,12 +54,12 @@ def monthly_summary():
                     row["starting_location"],
                     row["ending_location"],
                     f"${float(row['total_price']):.2f}",
-                    format_date_display(row["trip_date"]),
+                    format_date_display(row["date"]),
                 ])
             draw_table(["ID", "Mode of Transport", "Starting Location", "Ending Location", "Total Price", "Date"], table_rows)
 
         print()
-        print("\t[P] Prev month\t[N] Next month\t[D] Delete trip]\t[B] Back")
+        print("\t[P] Prev month\t[N] Next month\t[D] Delete trip\t[B] Back")
         print()
         choice = check_escape(input("\tChoice: ").strip().lower())
 

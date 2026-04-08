@@ -48,7 +48,7 @@ def all_history():
         ])
 
     draw_table(
-        ["Month", "Total", "vs $81", "Trips", "Bus", "Train", "Favoured"],
+        ["Month", "Total", "Profit", "Total Trips", "Bus", "Train", "Favoured"],
         rows,
     )
 

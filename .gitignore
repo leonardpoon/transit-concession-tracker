@@ -15,3 +15,5 @@ __pycache__/
 # Database files (if any local database files are created, ignore them)
 *.db
 *.sqlite
+
+run.bat

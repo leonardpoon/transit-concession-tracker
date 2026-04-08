@@ -46,7 +46,7 @@ def edit_trip():
                 r["starting_location"],
                 r["ending_location"],
                 f"${float(r['total_price']):.2f}",
-                format_date_display(r["trip_date"]),
+                format_date_display(r["date"]),
             ])
         draw_table(["ID", "Mode of Transport", "Starting Location", "Ending Location", "Total Price", "Date"], rows)
 
@@ -78,7 +78,7 @@ def edit_trip():
         print("\tPress Enter to keep the current value.")
         print()
 
-        current_mode = selected["mode"]
+        current_mode = selected["mode_of_transport"]
         while True:
             mode_input = check_escape(input(f"\tMode of Transport (bus/train) [{current_mode}]: ").strip().lower())
             if mode_input == "":
@@ -116,11 +116,11 @@ def edit_trip():
             except ValueError:
                 print("\tPlease Enter a valid amount.")
 
-        current_date = format_date_display(selected["trip_date"])
+        current_date = format_date_display(selected["date"])
         while True:
             date_input = check_escape(input(f"\tDate (DD-MM-YYYY) [{current_date}]: ").strip())
             if date_input == "":
-                new_date = selected["trip_date"]
+                new_date = selected["date"]
                 break
             try:
                 new_date = datetime.strptime(date_input, "%d-%m-%Y").strftime("%Y-%m-%d")

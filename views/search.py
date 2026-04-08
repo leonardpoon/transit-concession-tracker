@@ -63,7 +63,7 @@ def search():
                     r["starting_location"],
                     r["ending_location"],
                     f"${float(r['total_price']):.2f}",
-                    format_date_display(r["trip_date"]),
+                    format_date_display(r["date"]),
                 ])
             draw_table(["ID", "Mode of Transport", "Starting Location", "Ending Location", "Total Price", "Date"], rows)
 

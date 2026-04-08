@@ -20,7 +20,7 @@ def repeat_days():
     for i, day in enumerate(recent, 1):
         rows.append([
             f"[{i}]",
-            format_date_display(day["trip_date"]),
+            format_date_display(day["date"]),
             str(int(day["trip_count"])),
             f"${float(day['total_price']):.2f}",
         ])
@@ -35,7 +35,7 @@ def repeat_days():
         return
     
     selected = recent[int(choice) - 1]
-    selected_date = str(selected["trip_date"])
+    selected_date = str(selected["date"])
 
     clear()
     header()

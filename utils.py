@@ -112,10 +112,10 @@ def find_similar_location(name, locations, threshold = 0.8):
         return matches[0]
     return None
 
-def EscapeToMenu(BaseException):
+class EscapeToMenu(BaseException):
     pass
 
 def check_escape(value):
-    if value.strip().lower() == ("e", "exit", "quit", "q"):
+    if value.strip().lower() in ("e", "exit", "quit", "q"):
         raise EscapeToMenu()
     return value
