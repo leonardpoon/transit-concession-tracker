@@ -1,7 +1,7 @@
 from datetime import date, datetime
 
 from db.queries import get_all_locations, get_recent_routes, insert_trip
-from utils import clear, draw_table, format_date_display, header, confirm_prompt, find_similar_location
+from utils import clear, draw_table, format_date_display, header, confirm_prompt, find_similar_location, check_escape
 
 
 def log_trip():
@@ -19,16 +19,16 @@ def log_trip():
         for i, r in enumerate(recent, 1):
             rows.append([
                 f"[{i}]",
-                r["mode"],
-                r["origin"],
-                r["destination"],
-                f"${float(r['fare']):.2f}",
+                r["mode_of_transport"],
+                r["starting_location"],
+                r["ending_location"],
+                f"${float(r['total_price']):.2f}",
             ])
-        draw_table(["", "Mode", "From", "To", "Fare"], rows)
+        draw_table(["", "Mode of Transport", "Starting Location", "Ending Location", "Total Price"], rows)
         print("\t[M] Enter manually")
         print()
 
-        choice = input("\tChoice: ").strip().upper()
+        choice = check_escape(input("\tChoice: ").strip().upper())
 
         if choice == "M":
             _manual_entry()
@@ -48,12 +48,12 @@ def _quick_log(route):
     print("-" * 40)
     print()
     draw_table(
-        ["Mode", "From", "To", "Fare"],
+        ["Mode of Transport", "Starting Location", "Ending Location", "Total Price"],
         [[
-            route["mode"],
-            route["origin"],
-            route["destination"],
-            f"${float(route['fare']):.2f}",
+            route["mode_of_transport"],
+            route["starting_location"],
+            route["ending_location"],
+            f"${float(route['total_price']):.2f}",
         ]]
     )
 
@@ -62,10 +62,10 @@ def _quick_log(route):
         return
 
     trip_id = insert_trip(
-        route["mode"],
-        route["origin"],
-        route["destination"],
-        float(route["fare"]),
+        route["mode_of_transport"],
+        route["starting_location"],
+        route["ending_location"],
+        float(route["total_price"]),
         trip_date,
     )
 
@@ -82,7 +82,7 @@ def _manual_entry():
 
     # Mode
     while True:
-        mode = input("\n\tMode (B = Bus, T = Train): ").strip().upper()
+        mode = check_escape(input("\n\tMode of Transport (B = Bus, T = Train): ").strip().upper())
         if mode == "B":
             mode = "Bus"
             break
@@ -95,7 +95,7 @@ def _manual_entry():
     locations = get_all_locations()
 
     # Origin
-    origin = input("\tStarting Location: ").strip()
+    origin = check_escape(input("\tStarting Location: ").strip())
     if origin == "":
         print("\tStarting location cannot be empty.")
         input("\tPress Enter to go back...")
@@ -108,7 +108,7 @@ def _manual_entry():
                     return None
 
     # Destination
-    destination = input("\tEnding Location: ").strip()
+    destination = check_escape(input("\tEnding Location: ").strip())
     if destination == "":
         print("\tEnding location cannot be empty.")
         input("\tPress Enter to go back...")
@@ -125,11 +125,11 @@ def _manual_entry():
         input("\tPress Enter to go back...")
         return
 
-    # Fare
+    # Total Price
     while True:
         try:
-            fare = float(input("\tFare ($): ").strip())
-            if fare <= 0:
+            total_price = float(check_escape(input("\tFare ($): ").strip()))
+            if total_price <= 0:
                 raise ValueError
             break
         except ValueError:
@@ -140,17 +140,17 @@ def _manual_entry():
     if trip_date is None:
         return
 
-    trip_id = insert_trip(mode, origin, destination, fare, trip_date)
+    trip_id = insert_trip(mode, origin, destination, total_price, trip_date)
     print()
     print(f"\t✓ Saved! Trip #{trip_id}")
-    print(f"\t{mode} | {origin} → {destination}\t|\t${fare:.2f}\t|\t{format_date_display(trip_date)}")
+    print(f"\t{mode} | {origin} → {destination}\t|\t${total_price:.2f}\t|\t{format_date_display(trip_date)}")
     input("\n\tPress Enter to go back...")
 
 
 def _get_date():
     today = date.today()
     today_display = today.strftime("%d-%m-%Y")
-    date_input = input(f"\n\tDate (DD-MM-YYYY) [press Enter for today: {today_display}]: ").strip()
+    date_input = check_escape(input(f"\n\tDate (DD-MM-YYYY) [press Enter for today: {today_display}]: ").strip())
 
     if date_input == "":
         return str(today)
@@ -159,6 +159,6 @@ def _get_date():
         dt = datetime.strptime(date_input, "%d-%m-%Y")
         return dt.strftime("%Y-%m-%d")
     except ValueError:
-        print("\tInvalid date. Use DD-MM-YYYY e.g. 07-12-2026")
+        print(f"\tInvalid date. Use DD-MM-YYYY e.g. {datetime.now().strftime('%d-%m-%Y')}")
         input("\tPress Enter to go back...")
         return None

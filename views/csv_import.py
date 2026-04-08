@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from db.queries import insert_trips_bulk
-from utils import clear, confirm_prompt, draw_table, header
+from utils import clear, confirm_prompt, draw_table, header, check_escape
 
 DATE_FORMATS = [
     "%d-%m-%Y",
@@ -38,7 +38,7 @@ def csv_import():
     print("]\tDD-MM-YYYY, YYYY-MM-DD, DD/MM/YYYY, DD-MMM-YYYY")
     print()
 
-    path_input = input("\tEnter full path to CSV file: ").strip()
+    path_input = check_escape(input("\tEnter full path to CSV file: ").strip())
     if path_input == "":
         input("\tNo path entered. Press Enter to go back...")
         return
@@ -110,7 +110,7 @@ def csv_import():
     rows = []
     for t in preview:
         rows.append([t[0], t[1], t[2], f"${t[3]:.2f}", t[4]])
-    draw_table(["Mode", "From", "To", "Fare", "Date"], rows)
+    draw_table(["Mode of Transport", "Starting Location", "Ending Location", "Total Price", "Date"], rows)
 
     if len(valid_trips) > 5:
         print(f"\n\t ... and {len(valid_trips) - 5} more trips")
@@ -119,7 +119,7 @@ def csv_import():
 
     if skipped:
         print(f"\tSkipped: {len(skipped)} rows")
-        show = input("\tShow skipped rows? (yes/no): ").strip().lower()
+        show = check_escape(input("\tShow skipped rows? (yes/no): ").strip().lower())
         if show in ("yes", "y"):
             for row_num, reason in skipped:
                 print(f"\tRow{row_num}: {reason}")

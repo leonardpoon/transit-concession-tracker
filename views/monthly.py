@@ -2,7 +2,7 @@ from datetime import date
 
 from config import CONCESSION_THRESHOLD, MONTHS
 from db.queries import delete_trip, get_monthly_summary, get_trips_by_month
-from utils import clear, draw_table, format_date_display, header
+from utils import clear, draw_table, format_date_display, header, check_escape
 
 
 def monthly_summary():
@@ -50,18 +50,18 @@ def monthly_summary():
             for row in rows:
                 table_rows.append([
                     f"#{row['id']}",
-                    row["mode"],
-                    row["origin"],
-                    row["destination"],
-                    f"${float(row['fare']):.2f}",
+                    row["mode_of_transport"],
+                    row["starting_location"],
+                    row["ending_location"],
+                    f"${float(row['total_price']):.2f}",
                     format_date_display(row["trip_date"]),
                 ])
-            draw_table(["ID", "Mode", "From", "To", "Fare", "Date"], table_rows)
+            draw_table(["ID", "Mode of Transport", "Starting Location", "Ending Location", "Total Price", "Date"], table_rows)
 
         print()
         print("\t[P] Prev month\t[N] Next month\t[D] Delete trip]\t[B] Back")
         print()
-        choice = input("\tChoice: ").strip().lower()
+        choice = check_escape(input("\tChoice: ").strip().lower())
 
         if choice == "b" or choice == "":
             break
@@ -80,7 +80,7 @@ def monthly_summary():
             else:
                 month += 1
         elif choice == "d":
-            trip_id = input("\tEnter trip ID to delete (e.g. 3): ").strip()
+            trip_id = check_escape(input("\tEnter trip ID to delete (e.g. 3): ").strip())
             try:
                 if delete_trip(int(trip_id)):
                     print(f"\t✓ Trip #{trip_id} deleted.")

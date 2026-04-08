@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from db.queries import search_trips, update_trip
-from utils import clear, confirm_prompt, draw_table, format_date_display, header
+from utils import clear, confirm_prompt, draw_table, format_date_display, header, check_escape
 
 def edit_trip():
     while True:
@@ -15,8 +15,8 @@ def edit_trip():
         print("\t(Press Enter to skip any filter)")
         print()
 
-        query = input("\tLocation keyword: ").strip()
-        mode_input = input("\tMode (bus/train/all): ").strip().lower()
+        query = check_escape(input("\tLocation keyword: ").strip())
+        mode_input = check_escape(input("\tMode of Transport (bus/train/all): ").strip().lower())
         if mode_input in ("bus", "b"):
             mode = "Bus"
         elif mode_input in ("train", "t"):
@@ -42,16 +42,16 @@ def edit_trip():
         for r in results:
             rows.append([
                 f"#{r['id']}",
-                r["mode"],
-                r["origin"],
-                r["destination"],
-                f"${float(r['fare']):.2f}",
+                r["mode_of_transport"],
+                r["starting_location"],
+                r["ending_location"],
+                f"${float(r['total_price']):.2f}",
                 format_date_display(r["trip_date"]),
             ])
-        draw_table(["ID", "Mode", "From", "To", "Fare", "Date"], rows)
+        draw_table(["ID", "Mode of Transport", "Starting Location", "Ending Location", "Total Price", "Date"], rows)
 
         print()
-        trip_id_input = input("\tEnter trip ID to edit (or press Enter to go back): ").strip()
+        trip_id_input = check_escape(input("\tEnter trip ID to edit (or press Enter to go back): ").strip())
 
         if trip_id_input == "":
             return
@@ -80,7 +80,7 @@ def edit_trip():
 
         current_mode = selected["mode"]
         while True:
-            mode_input = input(f"\tMode (bus/train) [{current_mode}]: ").strip().lower()
+            mode_input = check_escape(input(f"\tMode of Transport (bus/train) [{current_mode}]: ").strip().lower())
             if mode_input == "":
                 new_mode = current_mode
                 break
@@ -88,22 +88,22 @@ def edit_trip():
                 new_mode = "Bus"
                 break
             elif mode_input in ("train", "t"):
-                mode = "Train"
+                new_mode = "Train"
                 break
             else:
                 print("\tPlease enter bus or train.")
 
-        current_origin = selected["origin"]
-        origin_input = input(f"\tStarting Location [{current_origin}]: ").strip()
+        current_origin = selected["starting_location"]
+        origin_input = check_escape(input(f"\tStarting Location [{current_origin}]: ").strip())
         new_origin = origin_input if origin_input != "" else current_origin
 
-        current_dest = selected["destination"]
-        dest_input = input(f"\tDestination [{current_dest}]: ").strip()
+        current_dest = selected["ending_location"]
+        dest_input = check_escape(input(f"\tEnding Location [{current_dest}]: ").strip())
         new_dest = dest_input if dest_input != "" else current_dest
 
-        current_fare = float(selected["fare"])
+        current_fare = float(selected["total_price"])
         while True:
-            fare_input = input(f"\tFare ($) [{current_fare:.2f}]: ").strip()
+            fare_input = check_escape(input(f"\tFare ($) [{current_fare:.2f}]: ").strip())
             if fare_input == "":
                 new_fare = current_fare
                 break
@@ -118,7 +118,7 @@ def edit_trip():
 
         current_date = format_date_display(selected["trip_date"])
         while True:
-            date_input = input(f"\tDate (DD-MM-YYYY) [{current_date}]: ").strip()
+            date_input = check_escape(input(f"\tDate (DD-MM-YYYY) [{current_date}]: ").strip())
             if date_input == "":
                 new_date = selected["trip_date"]
                 break
@@ -126,7 +126,7 @@ def edit_trip():
                 new_date = datetime.strptime(date_input, "%d-%m-%Y").strftime("%Y-%m-%d")
                 break
             except ValueError:
-                print("\tInvalid date. use DD-MM-YYYY e.g. 07-04-2026")
+                print(f"\tInvalid date. use DD-MM-YYYY e.g. {datetime.now().strftime('%d-%m-%Y')}")
 
         clear()
         header()
@@ -135,9 +135,9 @@ def edit_trip():
         print()
 
         draw_table(
-            ["", "Mode", "From", "To", "Fare", "Date"],
+            ["", "Mode of Transport", "Starting Location", "Ending Location", "Total Price", "Date"],
             [
-                ["Before", selected["mode"], selected["origin"], selected["destination"], f"${current_fare:.2f}", current_date],
+                ["Before", selected["mode_of_transport"], selected["starting_location"], selected["ending_location"], f"${current_fare:.2f}", current_date],
                 ["After", new_mode, new_origin, new_dest, f"${new_fare:.2f}", format_date_display(new_date)],
             ]
         )

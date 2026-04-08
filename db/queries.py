@@ -217,4 +217,19 @@ def update_trip(trip_id, mode_of_transport, starting_location, ending_location, 
     cursor.close()
     conn.close()
     return affected > 0
-                         
+
+
+def get_all_trips():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute(
+        "SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
+        "FROM trips "
+        "ORDER BY date ASC"
+    )
+
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows

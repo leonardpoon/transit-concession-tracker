@@ -9,8 +9,9 @@ from views.history import all_history
 from views.csv_import import csv_import
 from views.search import search
 from views.edit_trip import edit_trip
+from views.export import export
 
-from utils import clear, header, show_monthly_status
+from utils import clear, header, show_monthly_status, EscapeToMenu
 from config import MONTHS
 from datetime import date
 
@@ -26,33 +27,42 @@ def main_menu():
         print("\t[5] View All History")
         print("\t[6] Search Trips")
         print("\t[7] Edit a Trip")
-        print("\t[8] Import from CSV")
-        print("\t[9] Exit")
+        print("\t[8] Export to CSV")
+        print("\t[9] Import from CSV")
+        print("\t[0] Exit")
         print()
+        print("\t(Type 'e' at any prompt to return to this menu)")
 
         choice = input("\tEnter your choice: ").strip()
-
-        if choice == "1":
-            log_trip()
-        elif choice == "2":
-            log_day()
-        elif choice == "3":
-            repeat_days()
-        elif choice == "4":
-            monthly_summary()
-        elif choice == "5":
-            all_history()
-        elif choice == "6":
-            search()
-        elif choice == "7":
-            edit_trip()
-        elif choice == "8":
-            csv_import()
-        elif choice == "9":
-            print("\nGoodbye!")
-            sys.exit()
-        else:
-            input("\tInvalid choice. Press Enter to try again.")
+        
+        try:
+            if choice == "1":
+                log_trip()
+            elif choice == "2":
+                log_day()
+            elif choice == "3":
+                repeat_days()
+            elif choice == "4":
+                monthly_summary()
+            elif choice == "5":
+                all_history()
+            elif choice == "6":
+                search()
+            elif choice == "7":
+                edit_trip()
+            elif choice == "8":
+                export()
+            elif choice == "9":
+                csv_import()
+            elif choice == "0":
+                print("\nGoodbye!")
+                sys.exit(0)
+            else:
+                input("\tInvalid choice. Press Enter to try again.")
+        except SystemExit:
+            raise
+        except EscapeToMenu:
+                continue
 
 if __name__ == "__main__":
     try:

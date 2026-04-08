@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from db.queries import search_trips
-from utils import clear, confirm_prompt, draw_table, format_date_display, header
+from utils import clear, confirm_prompt, draw_table, format_date_display, header, check_escape
 
 def search():
     while True:
@@ -13,9 +13,9 @@ def search():
         print("\tFilters (press Enter to skip any filter)")
         print()
 
-        query = input("\tLocation keyword: ").strip()
+        query = check_escape(input("\tLocation keyword: ").strip())
 
-        mode_input = input("\tMode (bus/train/all): ").strip().lower()
+        mode_input = check_escape(input("\tMode of Transport (bus/train/all): ").strip().lower())
         if mode_input in ("bus", "b"):
             mode = "Bus"
         elif mode_input in ("train", "t"):
@@ -26,8 +26,8 @@ def search():
 
         print()
         print("\tData range (DD-MM-YYYY, press Enter to skip)")
-        start_raw = input("\tFrom date: ").strip()
-        end_raw   = input("\tTo date  : ").strip()
+        start_raw = check_escape(input("\tFrom date: ").strip())
+        end_raw   = check_escape(input("\tTo date  : ").strip())
 
         start_date = ""
         end_date = ""
@@ -59,15 +59,15 @@ def search():
             for r in results:
                 rows.append([
                     f"#{r['id']}",
-                    r["mode"],
-                    r["origin"],
-                    r["destination"],
-                    f"${float(r['fare']):.2f}",
+                    r["mode_of_transport"],
+                    r["starting_location"],
+                    r["ending_location"],
+                    f"${float(r['total_price']):.2f}",
                     format_date_display(r["trip_date"]),
                 ])
-            draw_table(["ID", "Mode", "Origin", "Destination", "Fare", "Date"], rows)
+            draw_table(["ID", "Mode of Transport", "Starting Location", "Ending Location", "Total Price", "Date"], rows)
 
-            total = sum(float(r["fare"]) for r in results)
+            total = sum(float(r["total_price"]) for r in results)
             print(f"\n\t{len(results)} trips found\t|\tTotal: ${total:.2f}")
 
         print()

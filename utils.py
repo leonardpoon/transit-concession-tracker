@@ -10,7 +10,7 @@ def clear():
 
 def header():
     print("=" * 40)
-    print("  Transit Tracker  ")
+    print("\tTransit Tracker\t")
     print("=" * 40)
 
 def show_monthly_status():
@@ -71,34 +71,34 @@ def format_date_display(trip_date):
 
 def collect_dates():
     print()
-    print("  Enter dates one per line (DD-MM-YYYY).")
-    print("  Press Enter twice when done.")
+    print("\tEnter dates one per line (DD-MM-YYYY).")
+    print("\tPress Enter twice when done.")
     print()
 
     dates = []
     while True:
-        entry = input("  > ").strip()
+        entry = input("\t> ").strip()
         if entry == "":
             if dates:
                 break
             else:
-                print("  Please enter at least one date.")
+                print("\tPlease enter at least one date.")
             continue
         try:
             from datetime import datetime
             dt = datetime.strptime(entry, "%d-%m-%Y")
             mysql_date = dt.strftime("%Y-%m-%d")
             dates.append(mysql_date)
-            print(f"  ✓ Added {format_date_display(mysql_date)}")
+            print(f"\t✓ Added {format_date_display(mysql_date)}")
         except ValueError:
-            print("  Invalid format. Use DD-MM-YYYY e.g. 07-04-2026")
+            print(f"\tInvalid format. Use DD-MM-YYYY e.g. {datetime.now().strftime('%d-%m-%Y')}")
 
     return dates
 
 def confirm_prompt(message="\tConfirm? (yes/no): "):
     while True:
         answer = input(message).strip().lower()
-        if answer in ("yes", "y"):
+        if answer in ("yes", "y", ""):
             return True
         elif answer in ("no", "n"):
             return False
@@ -111,3 +111,11 @@ def find_similar_location(name, locations, threshold = 0.8):
     if matches:
         return matches[0]
     return None
+
+def EscapeToMenu(BaseException):
+    pass
+
+def check_escape(value):
+    if value.strip().lower() == ("e", "exit", "quit", "q"):
+        raise EscapeToMenu()
+    return value

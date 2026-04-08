@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from db.queries import get_all_locations, insert_trips_bulk
-from utils import clear, draw_table, format_date_display, header, confirm_prompt, find_similar_location
+from utils import clear, draw_table, format_date_display, header, confirm_prompt, find_similar_location, check_escape
 
 def log_day():
     clear()
@@ -10,7 +10,7 @@ def log_day():
 
     today = date.today()
     today_display = today.strftime("%d-%m-%Y")
-    date_input = input(f"\n\tDate (DD-MM-YYYY) [Press Enter for today's date {today_display}]: ").strip()
+    date_input = check_escape(input(f"\n\tDate (DD-MM-YYYY) [Press Enter for today's date {today_display}]: ").strip())
 
     if date_input == "":
         trip_date = str(today)
@@ -20,7 +20,7 @@ def log_day():
             dt = datetime.strptime(date_input, "%d-%m-%Y")
             trip_date = dt.strftime("%Y-%m-%d")
         except ValueError:
-            print("\tInvalid date. Use DD-MM-YYYY e.g. 01-12-2026")
+            print(f"\tInvalid date. Use DD-MM-YYYY e.g. {datetime.now().strftime('%d-%m-%Y')}")
             input("\tPress Enter to go back...")
             return
         
@@ -44,7 +44,7 @@ def log_day():
                     t[2],
                     f"${t[3]:.2f}"
                     ])
-            draw_table(["#", "Mode", "From", "To", "Fare"], rows)
+            draw_table(["#", "Mode of Transport", "Starting Location", "Ending Location", "Total Price"], rows)
             total = sum(t[3] for t in trips)
             print(f"\n\tRunning Total: ${total:.2f}")
         else:
@@ -53,7 +53,7 @@ def log_day():
         print()
         print("\t[A] Add Trip\t[D] Delete Last\t[S] Save Day\t[C] Cancel")
         print()
-        choice = input("\tChoice: ").strip().upper()
+        choice = check_escape(input("\tChoice: ").strip().upper())
 
         if choice == "A":
             trip = _add_trip(locations)
@@ -87,7 +87,7 @@ def log_day():
                     t[2],
                     f"${t[3]:.2f}",
                 ])
-            draw_table(["#", "Mode", "From", "To", "Fare"], rows)
+            draw_table(["#", "Mode of Transport", "Starting Location", "Ending Location", "Total Price"], rows)
 
             total = sum(t[3] for t in trips)
             print(f"\n\t{len(trips)} trips\t|\tTotal: ${total:.2f}")
@@ -113,7 +113,7 @@ def _add_trip(locations):
     print()
 
     while True:
-        mode = input("\tMode of Transport (Bus/Train): ").strip().upper()
+        mode = check_escape(input("\tMode of Transport (Bus/Train): ").strip().upper())
         if mode == "BUS":
             mode = "Bus"
             break
@@ -123,7 +123,7 @@ def _add_trip(locations):
         else:
             print("\tPlease enter Bus or Train.")
 
-    origin = input("\tStarting Location: ").strip()
+    origin = check_escape(input("\tStarting Location: ").strip())
     if origin == "":
         print("\tStarting Location cannot be empty.")
         return None
@@ -134,7 +134,7 @@ def _add_trip(locations):
                 if not confirm_prompt(f"\t'{origin}' as a new location? (yes/no): "):
                     return None
         
-    destination = input("\tEnding Location: ").strip()
+    destination = check_escape(input("\tEnding Location: ").strip())
     if destination == "":
         print("\tEnding Location cannot be empty.")
         return None
@@ -147,12 +147,12 @@ def _add_trip(locations):
 
     while True:
         try:
-            fare = float(input("\tFare ($): ").strip())
-            if fare < 0:
+            total_price = float(check_escape(input("\tFare ($): ").strip()))
+            if total_price < 0:
                 raise ValueError
             break
         except ValueError:
             print("\tPlease enter a valid non-negative number for fare.")
-    print(f"\t✓ Added: {mode} | {origin} → {destination} | ${fare:.2f}")
-    return (mode, origin, destination, fare)
+    print(f"\t✓ Added: {mode} | {origin} → {destination} | ${total_price:.2f}")
+    return (mode, origin, destination, total_price)
     
