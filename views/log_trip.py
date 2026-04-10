@@ -82,15 +82,15 @@ def _manual_entry():
 
     # Mode
     while True:
-        mode = check_escape(input("\n\tMode of Transport (B = Bus, T = Train): ").strip().upper())
-        if mode == "B":
+        mode = check_escape(input("\n\tMode of Transport (Bus/Train): ").strip().upper())
+        if mode == "BUS":
             mode = "Bus"
             break
-        elif mode == "T":
+        elif mode == "TRAIN":
             mode = "Train"
             break
         else:
-            print("\tPlease enter B or T")
+            print("\tPlease enter Bus or Train.")
 
     locations = get_all_locations()
 
@@ -103,8 +103,10 @@ def _manual_entry():
     if origin not in locations:
         similar = find_similar_location(origin, locations)
         if similar:
-            if not confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
-                if not confirm_prompt(f"\t'{origin}' as a new location? (yes/no): "):
+            if confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
+                origin = similar
+            else:
+                if not confirm_prompt(f"\tSave '{origin}' as a new location? (yes/no): "):
                     return None
 
     # Destination
@@ -116,8 +118,10 @@ def _manual_entry():
     if destination not in locations:
         similar = find_similar_location(destination, locations)
         if similar:
-            if not confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
-                if not confirm_prompt(f"\t'{destination}' as a new location? (yes/no): "):
+            if confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
+                destination = similar
+            else:
+                if not confirm_prompt(f"\tSave '{destination}' as a new location? (yes/no): "):
                     return None
 
     if origin.lower() == destination.lower():

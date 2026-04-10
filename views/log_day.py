@@ -130,8 +130,10 @@ def _add_trip(locations):
     if origin not in locations:
         similar = find_similar_location(origin, locations)
         if similar:
-            if not confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
-                if not confirm_prompt(f"\t'{origin}' as a new location? (yes/no): "):
+            if confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
+                destination = similar
+            else:
+                if not confirm_prompt(f"\tSave '{destination}' as a new location? (yes/no): "):
                     return None
         
     destination = check_escape(input("\tEnding Location: ").strip())
@@ -141,8 +143,10 @@ def _add_trip(locations):
     if destination not in locations:
         similar = find_similar_location(destination, locations)
         if similar:
-            if not confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
-                if not confirm_prompt(f"\t'{destination}' as a new location? (yes/no): "):
+            if confirm_prompt(f"\tDid you mean '{similar}'? (yes/no): "):
+                destination = similar
+            else:
+                if not confirm_prompt(f"\tSave '{destination}' as a new location? (yes/no): "):
                     return None
 
     while True:
