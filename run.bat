@@ -10,9 +10,9 @@ echo.
 set /p choice="Enter choice: "
 
 if "%choice%"=="1" (
-    "C:\Users\Leonard Poon\Desktop\personal-projects\venv\Scripts\python.exe" main.py
+    "D:\personal-projects\venv\Scripts\python.exe" main.py
 )
 if "%choice%"=="2" (
-    "C:\Users\Leonard Poon\Desktop\personal-projects\venv\Scripts\streamlit.exe" run dashboard.py
+    "D:\personal-projects\transit-tracker\transit-concession-tracker\venv\Scripts\streamlit.exe" run dashboard.py
 )
 pause
