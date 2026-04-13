@@ -13,6 +13,6 @@ if "%choice%"=="1" (
     "D:\personal-projects\venv\Scripts\python.exe" main.py
 )
 if "%choice%"=="2" (
-    "D:\personal-projects\transit-tracker\transit-concession-tracker\venv\Scripts\streamlit.exe" run dashboard.py
+    "D:\personal-projects\venv\Scripts\python.exe" -m streamlit run dashboard.py
 )
 pause

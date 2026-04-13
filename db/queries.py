@@ -233,3 +233,41 @@ def get_all_trips():
     cursor.close()
     conn.close()
     return rows
+
+def get_cycle_summary(start_date, end_date):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary = True)
+
+    cursor.execute(
+        "SELECT "
+        " COALESCE(SUM(total_price), 0) AS total, "
+        " COUNT(*) AS trip_count, "
+        " SUM(CASE WHEN mode_of_transport = 'Bus' THEN 1 ELSE 0 END) AS bus_count, "
+        " SUM(CASE WHEN mode_of_transport = 'Train' THEN 1 ELSE 0 END) AS train_count "
+        "FROM trips "
+        "WHERE date >= %s AND date <= %s",
+        (start_date, end_date)
+    )
+
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return row
+
+def get_trips_by_cycle(start_date, end_date):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary = True)
+
+    cursor.execute(
+        "SELECT id, mode_of_transport, starting_location, ending_location, "
+        "total_price, date "
+        "FROM trips "
+        "WHERE date >= %s AND date <= %s "
+        "ORDER BY id DESC",
+        (start_date, end_date)
+    )
+
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows

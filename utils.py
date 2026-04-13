@@ -3,7 +3,7 @@ import difflib
 from datetime import date
 
 from config import CONCESSION_THRESHOLD, MONTHS
-from db.queries import get_monthly_summary
+from db.queries import get_monthly_summary, get_cycle_summary
 
 def clear():
     os.system('cls')
@@ -14,18 +14,22 @@ def header():
     print("=" * 40)
 
 def show_monthly_status():
-    today = date.today()
-    summary = get_monthly_summary(today.year, today.month)
+    cycle_start, cycle_end = get_current_cycles()
+    summary = get_cycle_summary(cycle_start, cycle_end)
     total = float(summary["total"] or 0)
     diff = total - CONCESSION_THRESHOLD
 
-    print(f"\t{MONTHS[today.month]} {today.year}")
+    cycle_str = (
+        f"{cycle_start.strftime('%d %b')} - {cycle_end.strftime('%d %b %Y')}"
+    )
+
+    print(f"\tCycle: {cycle_str}")
     print(f"\t${total:.2f} / ${CONCESSION_THRESHOLD:.2f}")
 
-    if diff >= 0 :
-        print(f"\tConcession Covered! Saved {diff:.2f}")
+    if diff >= 0:
+        print(f"\tConcession covered! Saved ${diff:.2f}")
     else:
-        print(f"\tNeed ${abs(diff):.2f} more to break even")
+        print(f"\tNeed ${abs(diff):.2f} more to break even!")
     print()
 
 def draw_table(headers, rows):
@@ -119,3 +123,21 @@ def check_escape(value):
     if value.strip().lower() in ("e", "exit", "quit", "q"):
         raise EscapeToMenu()
     return value
+
+def get_current_cycles():
+    from datetime import date
+    today = date.today()
+
+    if today.day < 3:
+        if today.month == 1:
+            cycle_start = date(today.year -1, 12, 3)
+        else:
+            cycle_start = date(today.year, today.month -1, 3)
+    else:
+        cycle_start = date(today.year, today.month, 3)
+
+    if cycle_start.month == 12:
+        cycle_end = date(cycle_start.year + 1, 1, 2)
+    else:
+        cycle_end = date(cycle_start.year, cycle_start.month + 1, 2)
+    return cycle_start, cycle_end

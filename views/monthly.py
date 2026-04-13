@@ -1,26 +1,30 @@
 from datetime import date
 
 from config import CONCESSION_THRESHOLD, MONTHS
-from db.queries import delete_trip, get_monthly_summary, get_trips_by_month
+from db.queries import delete_trip, get_cycle_summary, get_trips_by_month
 from utils import clear, draw_table, format_date_display, header, check_escape
 
 
 def monthly_summary():
-    today = date.today()
-    year, month = today.year, today.month
+    cycle_start, cycle_end = get_cycle_summary()
 
     while True:
         clear()
         header()
 
-        summary = get_monthly_summary(year, month)
+        summary = get_cycle_summary(cycle_start, cycle_end)
         total   = float(summary["total"]       or 0)
         trips   = int(summary["trip_count"]    or 0)
         buses   = int(summary["bus_count"]     or 0)
         trains  = int(summary["train_count"]   or 0)
         diff    = total - CONCESSION_THRESHOLD
 
-        print(f"\t{MONTHS[month]} {year}")
+        cycle_str = (
+            f"{cycle_start.strftime('%d %b')} - "
+            f"{cycle_end.strftime('%d %b %Y')}"
+        )
+
+        print(f"\tCycle: {cycle_str}")
         print("-" * 40)
         print(f"\tTotal spent : ${total:.2f} / ${CONCESSION_THRESHOLD:.2f}")
 
@@ -42,7 +46,7 @@ def monthly_summary():
 
         print()
 
-        rows = get_trips_by_month(year, month)
+        rows = get_trips_by_month(cycle_start, cycle_end)
         if not rows:
             print("\tNo trips this month.")
         else:
@@ -66,19 +70,26 @@ def monthly_summary():
         if choice == "b" or choice == "":
             break
         elif choice == "p":
-            if month == 1:
-                month = 12
-                year -= 1
+            from datetime import timedelta
+            cycle_end = cycle_start - timedelta(days = 1)
+            if cycle_start.month == 1:
+                cycle_start = cycle_start.replace(
+                    year = cycle_start.year - 1, month = 12
+                )
             else:
-                month -= 1
+                cycle_start = cycle_start.replace(
+                    month = cycle_start.month - 1
+                )
         elif choice == "n":
-            if year == today.year and month == today.month:
-                input("\tAlready on current month. Press Enter...")
-            elif month == 12:
-                month = 1
-                year += 1
+            from datetime import date, timedelta
+            if cycle_start.month == 12:
+                cycle_end = cycle_start.replace(
+                    year = cycle_start.year + 1, month = 1, day = 2
+                )
             else:
-                month += 1
+                cycle_end = cycle_start.replace(
+                    month = cycle_start.month + 1, day = 2
+                )
         elif choice == "d":
             trip_id = check_escape(input("\tEnter trip ID to delete (e.g. 3): ").strip())
             try:

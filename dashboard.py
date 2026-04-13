@@ -2,9 +2,26 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import date
+from datetime import date as date_type
 import sys
 import os
+
+def get_current_cycle():
+    today = date_type.today()
+    if today.day < 3:
+        if today.month == 1:
+            cycle_start = date_type(today.year - 1, 12, 3)
+        else:
+            cycle_start = date_type(today.year, today.month - 1, 3)
+    else:
+        cycle_start = date_type(today.year, today.month, 3)
+
+    if cycle_start.month == 12:
+        cycle_end = date_type(cycle_start.year + 1, 1, 2)
+    else:
+        cycle_end = date_type(cycle_start.year, cycle_start.month + 1, 2)
+
+    return cycle_start, cycle_end
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -69,21 +86,53 @@ if selected_month_name != "All":
 else:
     df_filtered = df_year
 
-st.subheader(f"Summary — {selected_month_name} {selected_year}")
+# Current cycle KPIs
+cycle_start, cycle_end = get_current_cycle()
+cycle_str = f"{cycle_start.strftime('%d %b')} — {cycle_end.strftime('%d %b %Y')}"
 
-total_spent = df_filtered["total_price"].sum()
-total_trips = len(df_filtered)
-bus_trips = len(df_filtered[df_filtered["mode_of_transport"] == "Bus"])
-train_trips = len(df_filtered[df_filtered["mode_of_transport"] == "Train"])
-savings = total_spent - CONCESSION_THRESHOLD
+df_cycle = df[
+    (df["date"].dt.date >= cycle_start) &
+    (df["date"].dt.date <= cycle_end)
+]
+
+cycle_total  = df_cycle["total_price"].sum()
+cycle_trips  = len(df_cycle)
+cycle_buses  = len(df_cycle[df_cycle["mode_of_transport"] == "Bus"])
+cycle_trains = len(df_cycle[df_cycle["mode_of_transport"] == "Train"])
+cycle_savings = cycle_total - CONCESSION_THRESHOLD
+
+st.subheader(f"Current Cycle: {cycle_str}")
 
 col1, col2, col3, col4, col5 = st.columns(5)
+col1.metric("Cycle Total",   f"${cycle_total:.2f}")
+col2.metric("vs $81 target", f"${cycle_savings:+.2f}",
+            delta_color="normal" if cycle_savings >= 0 else "inverse")
+col3.metric("Cycle Trips",   cycle_trips)
+col4.metric("Bus Trips",     cycle_buses)
+col5.metric("Train Trips",   cycle_trains)
 
-col1.metric("Total Spent", f"\t${total_spent:.2f}")
-col2.metric("Savings", f"\t${savings:.2f}", delta_color="normal" if savings >= 0 else "inverse")
-col3.metric("Total Trips", total_trips)
-col4.metric("Bus Trips", bus_trips)
-col5.metric("Train Trips", train_trips)
+# Progress bar
+cycle_pct = min(cycle_total / CONCESSION_THRESHOLD, 1.0)
+st.progress(cycle_pct, text=f"${cycle_total:.2f} / ${CONCESSION_THRESHOLD:.2f}")
+
+st.divider()
+
+# Selected period KPIs
+st.subheader(f"Summary — {selected_month_name} {selected_year}")
+
+total_spent  = df_filtered["total_price"].sum()
+total_trips  = len(df_filtered)
+bus_trips    = len(df_filtered[df_filtered["mode_of_transport"] == "Bus"])
+train_trips  = len(df_filtered[df_filtered["mode_of_transport"] == "Train"])
+savings      = total_spent - CONCESSION_THRESHOLD
+
+col1, col2, col3, col4, col5 = st.columns(5)
+col1.metric("Total Spent",   f"${total_spent:.2f}")
+col2.metric("vs $81 target", f"+${savings:.2f}",
+            delta_color="normal" if savings >= 0 else "inverse")
+col3.metric("Total Trips",   total_trips)
+col4.metric("Bus Trips",     bus_trips)
+col5.metric("Train Trips",   train_trips)
 
 st.divider()
 
