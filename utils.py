@@ -14,7 +14,7 @@ def header():
     print("=" * 40)
 
 def show_monthly_status():
-    cycle_start, cycle_end = get_current_cycles()
+    cycle_start, cycle_end = get_current_cycle()
     summary = get_cycle_summary(cycle_start, cycle_end)
     total = float(summary["total"] or 0)
     diff = total - CONCESSION_THRESHOLD
@@ -124,7 +124,7 @@ def check_escape(value):
         raise EscapeToMenu()
     return value
 
-def get_current_cycles():
+def get_current_cycle():
     from datetime import date
     today = date.today()
 

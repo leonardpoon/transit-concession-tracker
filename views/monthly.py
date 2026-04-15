@@ -1,12 +1,12 @@
 from datetime import date
 
 from config import CONCESSION_THRESHOLD, MONTHS
-from db.queries import delete_trip, get_cycle_summary, get_trips_by_month
-from utils import clear, draw_table, format_date_display, header, check_escape
+from db.queries import delete_trip, get_cycle_summary, get_trips_by_cycle
+from utils import clear, draw_table, format_date_display, header, check_escape, get_current_cycle
 
 
 def monthly_summary():
-    cycle_start, cycle_end = get_cycle_summary()
+    cycle_start, cycle_end = get_current_cycle()
 
     while True:
         clear()
@@ -46,7 +46,7 @@ def monthly_summary():
 
         print()
 
-        rows = get_trips_by_month(cycle_start, cycle_end)
+        rows = get_trips_by_cycle(cycle_start, cycle_end)
         if not rows:
             print("\tNo trips this month.")
         else:
@@ -82,23 +82,11 @@ def monthly_summary():
                 )
         elif choice == "n":
             from datetime import date, timedelta
+            if cycle_end >= date.today():
+                input("\tAlready on current cycle. Press Enter...")
+                continue
+            cycle_start = cycle_end + timedelta(days=1)
             if cycle_start.month == 12:
-                cycle_end = cycle_start.replace(
-                    year = cycle_start.year + 1, month = 1, day = 2
-                )
+                cycle_end = cycle_start.replace(year=cycle_start.year + 1, month=1, day=2)
             else:
-                cycle_end = cycle_start.replace(
-                    month = cycle_start.month + 1, day = 2
-                )
-        elif choice == "d":
-            trip_id = check_escape(input("\tEnter trip ID to delete (e.g. 3): ").strip())
-            try:
-                if delete_trip(int(trip_id)):
-                    print(f"\t✓ Trip #{trip_id} deleted.")
-                else:
-                    print("\tTrip not found.")
-            except ValueError:
-                print("\tInvalid ID.")
-            input("\tPress Enter to continue...")
-        else:
-            input("\tInvalid choice. Press Enter to try again...")
+                cycle_end = cycle_start.replace(month=cycle_start.month + 1, day=2)
