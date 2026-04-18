@@ -24,7 +24,7 @@ def get_trips_by_month(year, month):
         "SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
         "FROM trips "
         "WHERE YEAR(date) = %s AND MONTH(date) = %s "
-        "ORDER BY date DESC, id ASC",
+        "ORDER BY date DESC, id DESC",
         (year, month)
     )
 
@@ -109,7 +109,7 @@ def get_trips_by_date(trip_date):
         "SELECT mode_of_transport, starting_location, ending_location, total_price "
         "FROM trips "
         "WHERE date = %s "
-        "ORDER BY id DESC",
+        "ORDER BY id ASC",
         (trip_date,)
     )
 
@@ -191,7 +191,7 @@ def search_trips(query = "", mode = "", start_date = "", end_date = ""):
     cursor.execute(
         f"SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
         f"FROM trips {where} "
-        f"ORDER BY id DESC LIMIT 100",
+        f"ORDER BY id DESC, id ASC LIMIT 100",
         params,
     )
 
@@ -263,7 +263,7 @@ def get_trips_by_cycle(start_date, end_date):
         "total_price, date "
         "FROM trips "
         "WHERE date >= %s AND date <= %s "
-        "ORDER BY date DESC, id ASC",
+        "ORDER BY date DESC, id DESC",
         (start_date, end_date)
     )
 
