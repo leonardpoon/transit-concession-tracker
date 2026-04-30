@@ -271,3 +271,23 @@ def get_trips_by_cycle(start_date, end_date):
     cursor.close()
     conn.close()
     return rows
+
+def get_lifetime_summary():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary = True)
+
+    cursor.execute(
+        "SELECT "
+        " COALESCE(SUM(total_price), 0) AS total_spent, "
+        " COUNT(*) AS total_trips, "
+        " SUM(CASE WHEN mode_of_transport = 'Bus' THEN 1 ELSE 0 END) AS bus_count, "
+        " SUM(CASE WHEN mode_of_transport = 'Train' THEN 1 ELSE 0 END) AS train_count, "
+        " MIN(date) AS first_trip, "
+        " MAX(date) AS last_trip "
+        "FROM trips"
+    )
+
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return row
