@@ -11,7 +11,7 @@ from views.search import search
 from views.edit_trip import edit_trip
 from views.export import export
 
-from utils import clear, header, show_monthly_status, EscapeToMenu
+from utils import clear, header, show_monthly_status, EscapeToMenu, show_recent_trips
 from config import MONTHS
 from datetime import date
 
@@ -20,6 +20,7 @@ def main_menu():
         clear()
         header()
         show_monthly_status()
+        show_recent_trips()
         print("\t[1] Log New Trip")
         print("\t[2] Log a Full Day")
         print("\t[3] Repeat a Past Day")

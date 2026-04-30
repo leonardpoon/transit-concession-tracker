@@ -3,7 +3,7 @@ import difflib
 from datetime import date
 
 from config import CONCESSION_THRESHOLD, MONTHS
-from db.queries import get_monthly_summary, get_cycle_summary
+from db.queries import get_monthly_summary, get_cycle_summary, get_recent_trips
 
 def clear():
     os.system('cls')
@@ -30,6 +30,22 @@ def show_monthly_status():
         print(f"\tConcession covered! Saved ${diff:.2f}")
     else:
         print(f"\tNeed ${abs(diff):.2f} more to break even!")
+    print()
+
+def show_recent_trips():
+    trips = get_recent_trips(5)
+    if not trips:
+        return
+    
+    print("\tRecent Trips:")
+    print("\t" + "-" * 40)
+    for t in trips:
+        date_str = format_date_display(t["date"])
+        mode = t["mode_of_transport"]
+        origin = t["starting_location"][:22].ljust(22)
+        dest = t["ending_location"][:22].ljust(22)
+        price = t["total_price"]
+        print(f"\t{date_str}\t{mode:<5}\t{origin:<22} → {dest:<22}\t${price:.2f}")
     print()
 
 def draw_table(headers, rows):
@@ -141,3 +157,4 @@ def get_current_cycle():
     else:
         cycle_end = date(cycle_start.year, cycle_start.month + 1, 2)
     return cycle_start, cycle_end
+

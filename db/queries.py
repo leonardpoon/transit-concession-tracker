@@ -291,3 +291,21 @@ def get_lifetime_summary():
     cursor.close()
     conn.close()
     return row
+
+
+def get_recent_trips(limit = 5):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary = True)
+
+    cursor.execute(
+        "SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
+        "FROM trips "
+        "ORDER BY id DESC "
+        "LIMIT %s",
+        (limit,)
+    )
+
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
