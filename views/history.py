@@ -1,5 +1,7 @@
-from config import CONCESSION_THRESHOLD, MONTHS
-from db.queries import get_months_with_data, get_monthly_summary
+from datetime import date
+
+from config import MONTHS, DEFAULT_CONCESSION_THRESHOLD
+from db.queries import get_months_with_data, get_monthly_summary, get_active_period
 from utils import clear, draw_table, header
 
 
@@ -23,7 +25,12 @@ def all_history():
         trips = int(s["trip_count"]   or 0)
         buses = int(s["bus_count"]    or 0)
         trains = int(s["train_count"] or 0)
-        diff  = total - CONCESSION_THRESHOLD
+
+        # Each month judged against whichever concession threshold was
+        # actually active then, not a single fixed amount.
+        period    = get_active_period(date(year, month, 1))
+        threshold = float(period["threshold_amount"]) if period else DEFAULT_CONCESSION_THRESHOLD
+        diff      = total - threshold
 
         if diff >= 0:
             diff_str = f"+${diff:.2f}"

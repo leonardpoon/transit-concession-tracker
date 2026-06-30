@@ -10,6 +10,7 @@ from views.csv_import import csv_import
 from views.search import search
 from views.edit_trip import edit_trip
 from views.export import export
+from views.manage_periods import manage_periods
 
 from utils import clear, header, show_monthly_status, EscapeToMenu, show_recent_trips
 from config import MONTHS
@@ -30,6 +31,7 @@ def main_menu():
         print("\t[7] Edit a Trip")
         print("\t[8] Export to CSV")
         print("\t[9] Import from CSV")
+        print("\t[10] Manage Concession Periods")
         print("\t[0] Exit")
         print()
         print("\t(Type 'e' at any prompt to return to this menu)")
@@ -55,6 +57,8 @@ def main_menu():
                 export()
             elif choice == "9":
                 csv_import()
+            elif choice == "10":
+                manage_periods()
             elif choice == "0":
                 print("\nGoodbye!")
                 sys.exit(0)

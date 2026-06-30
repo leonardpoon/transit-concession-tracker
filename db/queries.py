@@ -1,4 +1,5 @@
 from db.connection import get_connection
+from datetime import date, timedelta
 
 def insert_trip(mode_of_transport, starting_location, ending_location, total_price, date):
     conn = get_connection()
@@ -309,3 +310,95 @@ def get_recent_trips(limit = 5):
     cursor.close()
     conn.close()
     return rows
+
+def get_active_period(check_date = None):
+    if check_date is None:
+        check_date = date.today()
+        
+    conn = get_connection()
+    cursor = conn.cursor(dictionary = True)
+    cursor.execute(
+        "SELECT * FROM concession_periods "
+        "WHERE start_date <= %s AND (end_date IS NULL OR end_date >= %s) "
+        "ORDER BY start_date DESC "
+        "LIMIT 1",
+        (check_date, check_date)
+    )
+    
+    period = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return period
+
+def get_all_periods():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary = True)
+    cursor.execute("SELECT * FROM concession_periods ORDER BY start_date DESC")
+    periods = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return periods
+
+def add_concession_period(start_date, cycle_reset_day, threshold_amount, label = None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, start_date, end_date FROM concession_periods WHERE end_date IS NULL")
+    open_period = cursor.fetchone()
+    if open_period:
+        close_date = start_date - timedelta(days = 1)
+        if close_date < open_period[1]:
+            cursor.close()
+            conn.close()
+            raise ValueError(
+                "New period's start date is before the currently open "
+                "period's start date. Invalid range."
+            )
+        cursor.execute(
+            "UPDATE concession_periods SET end_date = %s WHERE id = %s",
+            (close_date, open_period[0])
+        )
+    
+    cursor.execute(
+        "INSERT INTO concession_periods "
+        "(start_date, end_date, cycle_reset_day, threshold_amount, label) "
+        "VALUES (%s, NULL, %s, %s, %s)",
+        (start_date, cycle_reset_day, threshold_amount, label)
+    )
+    
+    conn.commit()
+    new_id = cursor.lastrowid
+    cursor.close()
+    conn.close()
+    return new_id
+
+_NOCHANGE = object()
+
+def update_period(period_id, start_date = _NOCHANGE, end_date = _NOCHANGE, cycle_reset_day = _NOCHANGE, threshold_amount = _NOCHANGE, label = _NOCHANGE):
+    
+    fields, values = [], []
+    for col, val in [
+        ("start_date", start_date),
+        ("end_date", end_date),
+        ("cycle_reset_day", cycle_reset_day),
+        ("threshold_amount", threshold_amount),
+        ("label", label)
+    ]:
+        if val is not _NOCHANGE:
+            fields.append(f"{col} = %s")
+            values.append(val)
+            
+    if not fields:
+        return
+    
+    values.append(period_id)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        f"UPDATE concession_periods SET {', '.join(fields)} WHERE id = %s",
+        values
+    )
+    
+    conn.commit()
+    cursor.close()
+    conn.close()

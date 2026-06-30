@@ -9,8 +9,9 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 from db.connection import get_connection
-from db.queries import get_lifetime_summary
-from config import CONCESSION_THRESHOLD, MONTHS
+from db.queries import get_lifetime_summary, get_all_periods
+from config import MONTHS, DEFAULT_CONCESSION_THRESHOLD
+from utils import get_current_cycle
 
 
 st.set_page_config(
@@ -20,23 +21,21 @@ st.set_page_config(
 )
 
 
-# ── Cycle helper ───────────────────────────────────────────
-def get_current_cycle():
-    today = date_type.today()
-    if today.day < 3:
-        if today.month == 1:
-            cycle_start = date_type(today.year - 1, 12, 3)
-        else:
-            cycle_start = date_type(today.year, today.month - 1, 3)
-    else:
-        cycle_start = date_type(today.year, today.month, 3)
+# ── Concession period helpers ───────────────────────────────
+# Cycle logic itself now lives in utils.get_current_cycle (shared with the
+# CLI app), so the dashboard no longer keeps its own duplicate copy.
 
-    if cycle_start.month == 12:
-        cycle_end = date_type(cycle_start.year + 1, 1, 2)
-    else:
-        cycle_end = date_type(cycle_start.year, cycle_start.month + 1, 2)
+@st.cache_data(ttl=60)
+def load_periods():
+    return get_all_periods()
 
-    return cycle_start, cycle_end
+
+def threshold_for_date(d, periods):
+    """Find (threshold, label) for whichever concession period covers date d."""
+    for p in periods:  # get_all_periods() is already ordered start_date DESC
+        if p["start_date"] <= d and (p["end_date"] is None or p["end_date"] >= d):
+            return float(p["threshold_amount"]), p["label"]
+    return DEFAULT_CONCESSION_THRESHOLD, None
 
 
 # ── Data loading ───────────────────────────────────────────
@@ -75,6 +74,7 @@ st.caption("Personal Transit Tracker")
 try:
     df = load_all_trips()
     lifetime = load_lifetime_summary()
+    periods = load_periods()
 except Exception as e:
     st.error(f"Cannot connect to MySQL: {e}")
     st.stop()
@@ -91,6 +91,8 @@ years         = sorted(df["year"].unique(), reverse=True)
 year_options  = ["All"] + [str(y) for y in years]
 selected_year = st.sidebar.selectbox("Year", year_options)
 
+selected_month_num = None
+
 if selected_year == "All":
     df_year            = df.copy()
     selected_month_name = "All"
@@ -101,17 +103,17 @@ else:
     selected_month_name = st.sidebar.selectbox("Month", ["All"] + month_names)
 
     if selected_month_name != "All":
-        selected_month = months_available[
+        selected_month_num = months_available[
             month_names.index(selected_month_name)
         ]
-        df_year = df_year[df_year["month"] == selected_month]
+        df_year = df_year[df_year["month"] == selected_month_num]
 
 
 df_filtered = df_year
 
 
 # ── Current cycle panel ────────────────────────────────────
-cycle_start, cycle_end = get_current_cycle()
+cycle_start, cycle_end, cycle_threshold, cycle_label = get_current_cycle()
 cycle_str = (
     f"{cycle_start.strftime('%d %b')} — {cycle_end.strftime('%d %b %Y')}"
 )
@@ -122,18 +124,18 @@ df_cycle = df[
 ]
 
 cycle_total   = df_cycle["total_price"].sum()
-cycle_savings = cycle_total - CONCESSION_THRESHOLD
-cycle_pct     = min(cycle_total / CONCESSION_THRESHOLD, 1.0)
+cycle_savings = cycle_total - cycle_threshold
+cycle_pct     = min(cycle_total / cycle_threshold, 1.0) if cycle_threshold else 0
 
-st.subheader(f"Current Cycle: {cycle_str}")
+st.subheader(f"Current Cycle: {cycle_str}" + (f"  ({cycle_label})" if cycle_label else ""))
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Cycle Total",   f"${cycle_total:.2f}")
-col2.metric("vs $81 target", f"${cycle_savings:+.2f}",
+col2.metric(f"vs ${cycle_threshold:.2f} target", f"${cycle_savings:+.2f}",
             delta_color="normal" if cycle_savings >= 0 else "inverse")
 col3.metric("Cycle Trips",   len(df_cycle))
 col4.metric("Bus Trips",     len(df_cycle[df_cycle["mode_of_transport"] == "Bus"]))
 col5.metric("Train Trips",   len(df_cycle[df_cycle["mode_of_transport"] == "Train"]))
-st.progress(cycle_pct, text=f"${cycle_total:.2f} / ${CONCESSION_THRESHOLD:.2f}")
+st.progress(cycle_pct, text=f"${cycle_total:.2f} / ${cycle_threshold:.2f}")
 
 st.divider()
 
@@ -148,17 +150,29 @@ train_count   = int(lifetime["train_count"]    or 0)
 first_trip    = lifetime["first_trip"]
 last_trip     = lifetime["last_trip"]
 
-# Calculate months covered and total saved
+# Calculate months covered and total saved - each month judged against
+# whichever concession threshold was actually active then. Note: this
+# groups by calendar month (like the rest of the dashboard always has),
+# not the 3rd/1st-to-2nd/end concession cycle - if a price change lands
+# mid-month, the 1st-of-month lookup below may not perfectly match the
+# cycle that was actually active for trips later in that month.
 monthly_totals = (
     df.groupby(["year", "month"])["total_price"]
     .sum()
     .reset_index()
 )
+monthly_totals["threshold"] = monthly_totals.apply(
+    lambda r: threshold_for_date(date_type(int(r["year"]), int(r["month"]), 1), periods)[0],
+    axis=1,
+)
+
 months_tracked  = len(monthly_totals)
-months_covered  = len(monthly_totals[monthly_totals["total_price"] >= CONCESSION_THRESHOLD])
-total_saved     = monthly_totals[
-    monthly_totals["total_price"] >= CONCESSION_THRESHOLD
-]["total_price"].sum() - (months_covered * CONCESSION_THRESHOLD)
+covered_mask    = monthly_totals["total_price"] >= monthly_totals["threshold"]
+months_covered  = int(covered_mask.sum())
+total_saved     = (
+    monthly_totals.loc[covered_mask, "total_price"]
+    - monthly_totals.loc[covered_mask, "threshold"]
+).sum()
 avg_per_month   = total_spent / months_tracked if months_tracked > 0 else 0
 
 col1, col2, col3, col4, col5 = st.columns(5)
@@ -191,15 +205,31 @@ period_total  = df_filtered["total_price"].sum()
 period_trips  = len(df_filtered)
 period_buses  = len(df_filtered[df_filtered["mode_of_transport"] == "Bus"])
 period_trains = len(df_filtered[df_filtered["mode_of_transport"] == "Train"])
-period_savings = period_total - CONCESSION_THRESHOLD
+
+if selected_year != "All" and selected_month_name != "All" and selected_month_num is not None:
+    # Single specific month selected - exact threshold for that month.
+    period_threshold, period_period_label = threshold_for_date(
+        date_type(int(selected_year), int(selected_month_num), 1), periods
+    )
+    approx_note = None
+else:
+    # Selection spans multiple months/years where the threshold may have
+    # changed - comparing a multi-month sum against one threshold isn't
+    # fully meaningful anyway, so just use today's rate as a reference.
+    period_threshold = cycle_threshold
+    approx_note = "Selection spans multiple months - shown against today's threshold for reference."
+
+period_savings = period_total - period_threshold
 
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Total Spent",   f"${period_total:.2f}")
-col2.metric("vs $81 target", f"${period_savings:+.2f}",
+col2.metric(f"vs ${period_threshold:.2f} target", f"${period_savings:+.2f}",
             delta_color="normal" if period_savings >= 0 else "inverse")
 col3.metric("Total Trips",   period_trips)
 col4.metric("Bus Trips",     period_buses)
 col5.metric("Train Trips",   period_trains)
+if approx_note:
+    st.caption(approx_note)
 
 st.divider()
 
@@ -215,6 +245,10 @@ if selected_year == "All":
     monthly["label"] = monthly.apply(
         lambda r: f"{MONTHS[int(r['month'])]} {int(r['year'])}", axis=1
     )
+    monthly["threshold"] = monthly.apply(
+        lambda r: threshold_for_date(date_type(int(r["year"]), int(r["month"]), 1), periods)[0],
+        axis=1,
+    )
     monthly = monthly.sort_values(["year", "month"])
 
     fig_monthly = px.bar(
@@ -225,6 +259,13 @@ if selected_year == "All":
         labels={"total_price": "Amount ($)", "label": "Month", "year": "Year"},
         height=400,
     )
+    fig_monthly.add_trace(go.Scatter(
+        x=monthly["label"],
+        y=monthly["threshold"],
+        mode="lines",
+        line=dict(dash="dash", color="orange", shape="hv"),
+        name="Threshold",
+    ))
 else:
     st.subheader(f"Monthly Spending — {selected_year}")
     monthly = (
@@ -234,31 +275,36 @@ else:
         .reset_index()
         .sort_values("month")
     )
+    monthly["threshold"] = monthly["month"].apply(
+        lambda m: threshold_for_date(date_type(int(selected_year), int(m), 1), periods)[0]
+    )
 
     fig_monthly = go.Figure()
     fig_monthly.add_trace(go.Bar(
         x=monthly["month_name"],
         y=monthly["total_price"],
         marker_color=[
-            "#2ecc71" if v >= CONCESSION_THRESHOLD else "#e74c3c"
-            for v in monthly["total_price"]
+            "#2ecc71" if v >= t else "#e74c3c"
+            for v, t in zip(monthly["total_price"], monthly["threshold"])
         ],
+        name="Spending",
+    ))
+    fig_monthly.add_trace(go.Scatter(
+        x=monthly["month_name"],
+        y=monthly["threshold"],
+        mode="lines",
+        line=dict(dash="dash", color="orange", shape="hv"),
+        name="Threshold",
     ))
     fig_monthly.update_layout(
         xaxis_title="Month",
         yaxis_title="Amount ($)",
-        showlegend=False,
+        showlegend=True,
         height=400,
     )
 
-fig_monthly.add_hline(
-    y=CONCESSION_THRESHOLD,
-    line_dash="dash",
-    line_color="orange",
-    annotation_text=f"${CONCESSION_THRESHOLD:.2f} Threshold",
-    annotation_position="top right",
-)
 st.plotly_chart(fig_monthly, width='stretch')
+st.caption("Dashed line shows the concession threshold active in each month.")
 st.divider()
 
 
@@ -341,18 +387,24 @@ fig_yoy = px.line(
     markers=True,
     labels={"total_price": "Amount ($)", "month": "Month", "year": "Year"},
 )
-fig_yoy.add_hline(
-    y=CONCESSION_THRESHOLD,
-    line_dash="dash",
-    line_color="orange",
-    annotation_text=f"${CONCESSION_THRESHOLD:.2f} Threshold",
-)
+# No single threshold line here on purpose - the threshold has changed
+# over time (see caption below), so one flat line would misrepresent
+# earlier months.
 fig_yoy.update_xaxes(
     tickvals=list(range(1, 13)),
     ticktext=[MONTHS[m] for m in range(1, 13)],
 )
 fig_yoy.update_layout(height=400)
 st.plotly_chart(fig_yoy, width='stretch')
+
+period_summary_lines = []
+for p in sorted(periods, key=lambda p: p["start_date"]):
+    end_str = p["end_date"].strftime("%d %b %Y") if p["end_date"] else "now"
+    line = f"${float(p['threshold_amount']):.2f} from {p['start_date'].strftime('%d %b %Y')} to {end_str}"
+    if p["label"]:
+        line += f" ({p['label']})"
+    period_summary_lines.append(line)
+st.caption("Concession threshold over time: " + " · ".join(period_summary_lines))
 
 st.divider()
 

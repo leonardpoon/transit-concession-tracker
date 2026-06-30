@@ -1,12 +1,12 @@
-from datetime import date
+from datetime import date, timedelta
 
-from config import CONCESSION_THRESHOLD, MONTHS
+from config import MONTHS
 from db.queries import delete_trip, get_cycle_summary, get_trips_by_cycle
 from utils import clear, draw_table, format_date_display, header, check_escape, get_current_cycle
 
 
 def monthly_summary():
-    cycle_start, cycle_end = get_current_cycle()
+    cycle_start, cycle_end, threshold, label = get_current_cycle()
 
     while True:
         clear()
@@ -17,16 +17,16 @@ def monthly_summary():
         trips   = int(summary["trip_count"]    or 0)
         buses   = int(summary["bus_count"]     or 0)
         trains  = int(summary["train_count"]   or 0)
-        diff    = total - CONCESSION_THRESHOLD
+        diff    = total - threshold
 
         cycle_str = (
             f"{cycle_start.strftime('%d %b')} - "
             f"{cycle_end.strftime('%d %b %Y')}"
         )
 
-        print(f"\tCycle: {cycle_str}")
+        print(f"\tCycle: {cycle_str}" + (f"  ({label})" if label else ""))
         print("-" * 40)
-        print(f"\tTotal spent : ${total:.2f} / ${CONCESSION_THRESHOLD:.2f}")
+        print(f"\tTotal spent : ${total:.2f} / ${threshold:.2f}")
 
         if diff >= 0:
             print(f"\tSavings :\t +${diff:.2f}\t(concession Profited!)")
@@ -70,23 +70,9 @@ def monthly_summary():
         if choice == "b" or choice == "":
             break
         elif choice == "p":
-            from datetime import timedelta
-            cycle_end = cycle_start - timedelta(days = 1)
-            if cycle_start.month == 1:
-                cycle_start = cycle_start.replace(
-                    year = cycle_start.year - 1, month = 12
-                )
-            else:
-                cycle_start = cycle_start.replace(
-                    month = cycle_start.month - 1
-                )
+            cycle_start, cycle_end, threshold, label = get_current_cycle(cycle_start - timedelta(days=1))
         elif choice == "n":
-            from datetime import date, timedelta
             if cycle_end >= date.today():
                 input("\tAlready on current cycle. Press Enter...")
                 continue
-            cycle_start = cycle_end + timedelta(days=1)
-            if cycle_start.month == 12:
-                cycle_end = cycle_start.replace(year=cycle_start.year + 1, month=1, day=2)
-            else:
-                cycle_end = cycle_start.replace(month=cycle_start.month + 1, day=2)
+            cycle_start, cycle_end, threshold, label = get_current_cycle(cycle_end + timedelta(days=1))

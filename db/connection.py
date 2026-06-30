@@ -8,7 +8,7 @@ def init_schema():
     conn = mysql.connector.connect(**base)
     cursor = conn.cursor()
 
-    cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+    cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}`")
     cursor.execute(f"USE `{db_name}`")
 
     cursor.execute("""
@@ -19,6 +19,18 @@ def init_schema():
             ending_location VARCHAR(255) NOT NULL,
             total_price DECIMAL(10, 2) NOT NULL,
             date DATE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS concession_periods (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            start_date DATE NOT NULL,
+            end_date DATE NULL,
+            cycle_reset_day INT NOT NULL,
+            threshold_amount DECIMAL(10, 2) NOT NULL,
+            label VARCHAR(100) NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
