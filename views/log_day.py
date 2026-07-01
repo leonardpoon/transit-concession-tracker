@@ -64,7 +64,7 @@ def log_day():
         elif choice == "D":
             if trips:
                 removed = trips.pop()
-                print(f"\n\t✓ Removed: {removed[0]} | {removed[1]} → {removed[2]}")
+                print(f"\n\tRemoved: {removed[0]} | {removed[1]} -> {removed[2]}")
                 input("\tPress Enter to continue...")
             else:
                 input("\tNo trips to delete. Press Enter to continue...")
@@ -96,7 +96,7 @@ def log_day():
             if confirm_prompt("\tSave all? (yes/no): "):
                 bulk = [(t[0], t[1], t[2], t[3], trip_date) for t in trips]
                 count = insert_trips_bulk(bulk)
-                print(f"\n\t✓ {count} trips saved for {format_date_display(trip_date)}")
+                print(f"\n\t{count} trips saved for {format_date_display(trip_date)}")
                 input("\tPress Enter to go back...")
                 return
             else:
@@ -163,6 +163,5 @@ def _add_trip(locations):
             break
         except ValueError:
             print("\tPlease enter a valid non-negative number for fare.")
-    print(f"\t✓ Added: {mode} | {origin} → {destination} | ${total_price:.2f}")
+    print(f"\tAdded: {mode} | {origin} -> {destination} | ${total_price:.2f}")
     return (mode, origin, destination, total_price)
-    

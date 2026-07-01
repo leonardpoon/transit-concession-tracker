@@ -148,7 +148,7 @@ def edit_trip():
             return
         
         if update_trip(trip_id, new_mode, new_origin, new_dest, new_fare, new_date):
-            print(f"\n\t✓ Trip #{trip_id} updated successfully!")
+            print(f"\n\tTrip #{trip_id} updated successfully!")
         else:
             print(f"\n\tCould not update trip #{trip_id}.")
 

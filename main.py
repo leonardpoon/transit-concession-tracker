@@ -16,6 +16,39 @@ from utils import clear, header, show_monthly_status, EscapeToMenu, show_recent_
 from config import MONTHS
 from datetime import date
 
+def pause_before_exit():
+    if getattr(sys, "frozen", False):
+        try:
+            input("\nPress Enter to close...")
+        except EOFError:
+            pass
+
+
+def print_connection_error(error):
+    print(f"\nCannot connect to MySQL/TiDB: {error}")
+    print()
+    print("Things to check:")
+    print("  1. Your internet connection is active.")
+    print("  2. TiDB Cloud allows your current public IP address.")
+    print("  3. DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME are correct.")
+    print("  4. DB_SSL=true is set for TiDB Cloud.")
+    print()
+
+    msg = str(error).lower()
+    if "10013" in msg:
+        print("Windows reported socket error 10013.")
+        print("This is usually a firewall, antivirus, VPN, or network policy blocking")
+        print("the outbound connection to TiDB on port 4000.")
+    elif "access denied" in msg:
+        print("The database rejected the login. Recheck DB_USER and DB_PASSWORD.")
+    elif "unknown database" in msg:
+        print("The database name does not exist yet. Run setup.sql or start the app")
+        print("with a user that has permission to create the database.")
+    elif "timed out" in msg or "can't connect" in msg:
+        print("The app could not reach TiDB. Check host, port, network, and TiDB")
+        print("IP access list settings.")
+
+
 def main_menu():
     while True:
         clear()
@@ -73,7 +106,8 @@ if __name__ == "__main__":
     try:
         init_schema()
     except Exception as e:
-        print(f"\nCannot connect to MySQL: {e}")
+        print_connection_error(e)
+        pause_before_exit()
         sys.exit(1)
 
     main_menu()

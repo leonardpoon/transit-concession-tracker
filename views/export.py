@@ -120,7 +120,7 @@ def export():
                     f"{float(t['total_price']):.2f}",
                     str(t["date"]),
                 ])
-        print(f"\n\t✓ {len(trips)} trips exported to")
+        print(f"\n\t{len(trips)} trips exported to")
         print(f"\t {path}")
     except EscapeToMenu:
         raise

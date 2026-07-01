@@ -1,0 +1,7 @@
+certifi
+mysql-connector-python
+openpyxl
+pandas
+plotly
+python-dotenv
+streamlit

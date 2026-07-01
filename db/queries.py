@@ -1,6 +1,8 @@
 from db.connection import get_connection
 from datetime import date, timedelta
 
+_NOCHANGE = object()
+
 def insert_trip(mode_of_transport, starting_location, ending_location, total_price, date):
     conn = get_connection()
     cursor = conn.cursor()
@@ -339,66 +341,112 @@ def get_all_periods():
     conn.close()
     return periods
 
+def _ranges_overlap(start_a, end_a, start_b, end_b):
+    end_a = end_a or date.max
+    end_b = end_b or date.max
+    return start_a <= end_b and start_b <= end_a
+
+def _validate_period_range(cursor, start_date, end_date, exclude_id = None):
+    if end_date is not None and end_date < start_date:
+        raise ValueError("End date cannot be before start date.")
+
+    params = []
+    where = ""
+    if exclude_id is not None:
+        where = "WHERE id <> %s"
+        params.append(exclude_id)
+
+    cursor.execute(
+        f"SELECT id, start_date, end_date FROM concession_periods {where}",
+        params,
+    )
+    for existing_id, existing_start, existing_end in cursor.fetchall():
+        if _ranges_overlap(start_date, end_date, existing_start, existing_end):
+            raise ValueError(
+                "Period overlaps with existing period "
+                f"#{existing_id} ({existing_start} to {existing_end or 'active'})."
+            )
+
 def add_concession_period(start_date, cycle_reset_day, threshold_amount, label = None):
     conn = get_connection()
     cursor = conn.cursor()
-    
-    cursor.execute("SELECT id, start_date, end_date FROM concession_periods WHERE end_date IS NULL")
-    open_period = cursor.fetchone()
-    if open_period:
-        close_date = start_date - timedelta(days = 1)
-        if close_date < open_period[1]:
-            cursor.close()
-            conn.close()
-            raise ValueError(
-                "New period's start date is before the currently open "
-                "period's start date. Invalid range."
+
+    try:
+        cursor.execute("SELECT id, start_date, end_date FROM concession_periods WHERE end_date IS NULL")
+        open_period = cursor.fetchone()
+        if open_period:
+            close_date = start_date - timedelta(days = 1)
+            if close_date < open_period[1]:
+                raise ValueError(
+                    "New period's start date is before the currently open "
+                    "period's start date. Invalid range."
+                )
+            cursor.execute(
+                "UPDATE concession_periods SET end_date = %s WHERE id = %s",
+                (close_date, open_period[0])
             )
+
+        _validate_period_range(cursor, start_date, None, exclude_id = open_period[0] if open_period else None)
+
         cursor.execute(
-            "UPDATE concession_periods SET end_date = %s WHERE id = %s",
-            (close_date, open_period[0])
+            "INSERT INTO concession_periods "
+            "(start_date, end_date, cycle_reset_day, threshold_amount, label) "
+            "VALUES (%s, NULL, %s, %s, %s)",
+            (start_date, cycle_reset_day, threshold_amount, label)
         )
-    
-    cursor.execute(
-        "INSERT INTO concession_periods "
-        "(start_date, end_date, cycle_reset_day, threshold_amount, label) "
-        "VALUES (%s, NULL, %s, %s, %s)",
-        (start_date, cycle_reset_day, threshold_amount, label)
-    )
-    
-    conn.commit()
-    new_id = cursor.lastrowid
-    cursor.close()
-    conn.close()
+
+        conn.commit()
+        new_id = cursor.lastrowid
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
     return new_id
 
-_NOCHANGE = object()
-
 def update_period(period_id, start_date = _NOCHANGE, end_date = _NOCHANGE, cycle_reset_day = _NOCHANGE, threshold_amount = _NOCHANGE, label = _NOCHANGE):
-    
-    fields, values = [], []
-    for col, val in [
-        ("start_date", start_date),
-        ("end_date", end_date),
-        ("cycle_reset_day", cycle_reset_day),
-        ("threshold_amount", threshold_amount),
-        ("label", label)
-    ]:
-        if val is not _NOCHANGE:
-            fields.append(f"{col} = %s")
-            values.append(val)
-            
-    if not fields:
-        return
-    
-    values.append(period_id)
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        f"UPDATE concession_periods SET {', '.join(fields)} WHERE id = %s",
-        values
-    )
-    
-    conn.commit()
-    cursor.close()
-    conn.close()
+
+    try:
+        cursor.execute(
+            "SELECT start_date, end_date FROM concession_periods WHERE id = %s",
+            (period_id,),
+        )
+        current = cursor.fetchone()
+        if current is None:
+            raise ValueError("Period not found.")
+
+        new_start = current[0] if start_date is _NOCHANGE else start_date
+        new_end = current[1] if end_date is _NOCHANGE else end_date
+        _validate_period_range(cursor, new_start, new_end, exclude_id = period_id)
+
+        fields, values = [], []
+        for col, val in [
+            ("start_date", start_date),
+            ("end_date", end_date),
+            ("cycle_reset_day", cycle_reset_day),
+            ("threshold_amount", threshold_amount),
+            ("label", label)
+        ]:
+            if val is not _NOCHANGE:
+                fields.append(f"{col} = %s")
+                values.append(val)
+
+        if not fields:
+            return
+
+        values.append(period_id)
+        cursor.execute(
+            f"UPDATE concession_periods SET {', '.join(fields)} WHERE id = %s",
+            values
+        )
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()

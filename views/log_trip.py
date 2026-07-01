@@ -70,7 +70,7 @@ def _quick_log(route):
     )
 
     print()
-    print(f"\t✓ Saved! Trip #{trip_id} on {format_date_display(trip_date)}")
+    print(f"\tSaved! Trip #{trip_id} on {format_date_display(trip_date)}")
     input("\n\tPress Enter to go back...")
 
 
@@ -146,8 +146,8 @@ def _manual_entry():
 
     trip_id = insert_trip(mode, origin, destination, total_price, trip_date)
     print()
-    print(f"\t✓ Saved! Trip #{trip_id}")
-    print(f"\t{mode} | {origin} → {destination}\t|\t${total_price:.2f}\t|\t{format_date_display(trip_date)}")
+    print(f"\tSaved! Trip #{trip_id}")
+    print(f"\t{mode} | {origin} -> {destination}\t|\t${total_price:.2f}\t|\t{format_date_display(trip_date)}")
     input("\n\tPress Enter to go back...")
 
 

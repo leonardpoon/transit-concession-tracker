@@ -6,7 +6,7 @@ from config import DEFAULT_CONCESSION_THRESHOLD, MONTHS
 from db.queries import get_monthly_summary, get_cycle_summary, get_recent_trips, get_active_period
 
 def clear():
-    os.system('cls')
+    os.system("cls" if os.name == "nt" else "clear")
 
 def header():
     print("=" * 40)
@@ -45,7 +45,7 @@ def show_recent_trips():
         origin = t["starting_location"][:22].ljust(22)
         dest = t["ending_location"][:22].ljust(22)
         price = t["total_price"]
-        print(f"\t{date_str}\t{mode:<5}\t{origin:<22} → {dest:<22}\t${price:.2f}")
+        print(f"\t{date_str}\t{mode:<5}\t{origin:<22} -> {dest:<22}\t${price:.2f}")
     print()
 
 def draw_table(headers, rows):
@@ -55,13 +55,13 @@ def draw_table(headers, rows):
         for i, cell in enumerate(row):
             col_widths[i] = max(col_widths[i], len(str(cell)))
 
-    separator = "├" + "┼".join("─" * (w + 2) for w in col_widths) + "┤"
-    top        = "┌" + "┬".join("─" * (w + 2) for w in col_widths) + "┐"
-    bottom     = "└" + "┴".join("─" * (w + 2) for w in col_widths) + "┘"
+    separator = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
+    top        = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
+    bottom     = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
 
-    header_row = "│" + "│".join(
+    header_row = "|" + "|".join(
         f" {h:<{col_widths[i]}} " for i, h in enumerate(headers)
-    ) + "│"
+    ) + "|"
 
     print(top)
     print(header_row)
@@ -70,13 +70,13 @@ def draw_table(headers, rows):
     if not rows:
         empty_msg = "No data found"
         total_width = sum(col_widths) + (3 * len(col_widths)) + 1
-        print("│" + empty_msg.center(total_width - 2) + "│")
+        print("|" + empty_msg.center(total_width - 2) + "|")
     else:
         for row in rows:
-            print("│" + "│".join(
+            print("|" + "|".join(
                 f" {str(cell):<{col_widths[i]}} "
                 for i, cell in enumerate(row)
-            ) + "│")
+            ) + "|")
 
     print(bottom)
 
@@ -109,7 +109,7 @@ def collect_dates():
             dt = datetime.strptime(entry, "%d-%m-%Y")
             mysql_date = dt.strftime("%Y-%m-%d")
             dates.append(mysql_date)
-            print(f"\t✓ Added {format_date_display(mysql_date)}")
+            print(f"\tAdded {format_date_display(mysql_date)}")
         except ValueError:
             print(f"\tInvalid format. Use DD-MM-YYYY e.g. {datetime.now().strftime('%d-%m-%Y')}")
 

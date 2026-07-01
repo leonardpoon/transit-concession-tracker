@@ -1,5 +1,6 @@
 from datetime import datetime, date
 
+from config import CURRENT_CONCESSION_THRESHOLD, DEFAULT_CYCLE_RESET_DAY
 from utils import (
     header, clear, draw_table, confirm_prompt, check_escape,
     EscapeToMenu, format_date_display,
@@ -73,20 +74,26 @@ def _add_period():
     start = _prompt_date(f"\tStart date (DD-MM-YYYY) [default today {today_str}]: ",
                           default=date.today())
 
-    reset_day_raw = check_escape(input("\tCycle reset day (1-28): ")).strip()
+    reset_day_raw = check_escape(
+        input(f"\tCycle reset day (1-28) [default {DEFAULT_CYCLE_RESET_DAY}]: ")
+    ).strip()
     try:
-        reset_day = int(reset_day_raw)
+        reset_day = int(reset_day_raw) if reset_day_raw else DEFAULT_CYCLE_RESET_DAY
         if not (1 <= reset_day <= 28):
             raise ValueError
     except ValueError:
         print("\tInvalid reset day, must be between 1 and 28.")
         return
 
-    threshold_raw = check_escape(input("\tConcession threshold ($): ")).strip()
+    threshold_raw = check_escape(
+        input(f"\tConcession threshold ($) [default {CURRENT_CONCESSION_THRESHOLD:.2f}]: ")
+    ).strip()
     try:
-        threshold = float(threshold_raw)
+        threshold = float(threshold_raw) if threshold_raw else CURRENT_CONCESSION_THRESHOLD
+        if threshold <= 0:
+            raise ValueError
     except ValueError:
-        print("\tInvalid amount.")
+        print("\tInvalid amount, must be greater than 0.")
         return
 
     label = check_escape(input("\tLabel (optional, e.g. 'Adult concession'): ")).strip() or None
@@ -128,7 +135,11 @@ def _edit_period():
         input(f"\tStart date [{format_date_display(match['start_date'])}]: ")
     ).strip()
     if start_raw:
-        updates["start_date"] = datetime.strptime(start_raw, "%d-%m-%Y").date()
+        try:
+            updates["start_date"] = datetime.strptime(start_raw, "%d-%m-%Y").date()
+        except ValueError:
+            print("\tInvalid start date.")
+            return
 
     end_current = format_date_display(match["end_date"]) if match["end_date"] else "(active)"
     end_raw = check_escape(
@@ -137,20 +148,38 @@ def _edit_period():
     if end_raw.lower() == "none":
         updates["end_date"] = None
     elif end_raw:
-        updates["end_date"] = datetime.strptime(end_raw, "%d-%m-%Y").date()
+        try:
+            updates["end_date"] = datetime.strptime(end_raw, "%d-%m-%Y").date()
+        except ValueError:
+            print("\tInvalid end date.")
+            return
     # else: leave key absent entirely -> unchanged
 
     reset_raw = check_escape(
         input(f"\tCycle reset day [{match['cycle_reset_day']}]: ")
     ).strip()
     if reset_raw:
-        updates["cycle_reset_day"] = int(reset_raw)
+        try:
+            reset_day = int(reset_raw)
+            if not (1 <= reset_day <= 28):
+                raise ValueError
+            updates["cycle_reset_day"] = reset_day
+        except ValueError:
+            print("\tInvalid reset day, must be between 1 and 28.")
+            return
 
     threshold_raw = check_escape(
         input(f"\tThreshold [${float(match['threshold_amount']):.2f}]: ")
     ).strip()
     if threshold_raw:
-        updates["threshold_amount"] = float(threshold_raw)
+        try:
+            threshold = float(threshold_raw)
+            if threshold <= 0:
+                raise ValueError
+            updates["threshold_amount"] = threshold
+        except ValueError:
+            print("\tInvalid amount, must be greater than 0.")
+            return
 
     label_raw = check_escape(
         input(f"\tLabel [{match['label'] or ''}]: ")
@@ -163,7 +192,10 @@ def _edit_period():
         return
 
     if confirm_prompt("\tSave changes? (yes/no): "):
-        update_period(period_id, **updates)
-        print("\tPeriod updated.")
+        try:
+            update_period(period_id, **updates)
+            print("\tPeriod updated.")
+        except ValueError as e:
+            print(f"\tCould not update period: {e}")
     else:
         print("\tCancelled.")

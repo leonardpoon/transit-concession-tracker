@@ -105,7 +105,7 @@ def csv_import():
             except Exception as e:
                 skipped.append((f"{sheet_name} row {i}", str(e)))
 
-    # All sheets parsed — now preview and confirm
+    # All sheets parsed; now preview and confirm
     if not valid_trips:
         print("\n\tNo valid trips found.")
         if skipped:
@@ -150,5 +150,5 @@ def csv_import():
         return
 
     count = insert_trips_bulk(valid_trips)
-    print(f"\n\t✓ {count} trips imported successfully!")
+    print(f"\n\t{count} trips imported successfully!")
     input("\tPress Enter to go back...")

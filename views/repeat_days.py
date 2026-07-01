@@ -101,5 +101,5 @@ def repeat_days():
             ))
 
     count = insert_trips_bulk(bulk)
-    print(f"\n\t✓ {count} trips saved across {len(dates)} days")
+    print(f"\n\t{count} trips saved across {len(dates)} days")
     input("\tPress Enter to go back...")
