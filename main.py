@@ -1,3 +1,6 @@
+import os
+import shutil
+import subprocess
 import sys
 
 from db.connection import init_schema
@@ -13,8 +16,7 @@ from views.export import export
 from views.manage_periods import manage_periods
 
 from utils import clear, header, show_monthly_status, EscapeToMenu, show_recent_trips
-from config import MONTHS
-from datetime import date
+
 
 def pause_before_exit():
     if getattr(sys, "frozen", False):
@@ -49,6 +51,32 @@ def print_connection_error(error):
         print("IP access list settings.")
 
 
+def launch_dashboard():
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    dashboard_path = os.path.join(app_dir, "dashboard.py")
+    if not os.path.exists(dashboard_path):
+        dashboard_path = os.path.join(os.path.dirname(app_dir), "dashboard.py")
+
+    if not os.path.exists(dashboard_path):
+        print("\nCould not find dashboard.py next to the app.")
+        input("\nPress Enter to return to the menu...")
+        return
+
+    streamlit_cmd = shutil.which("streamlit")
+    if streamlit_cmd:
+        cmd = [streamlit_cmd, "run", dashboard_path]
+    else:
+        python_cmd = shutil.which("python") or shutil.which("py") or sys.executable
+        cmd = [python_cmd, "-m", "streamlit", "run", dashboard_path]
+
+    try:
+        subprocess.Popen(cmd)
+        print("\nDashboard is starting in your browser...")
+    except Exception as e:
+        print(f"\nCould not launch dashboard: {e}")
+    input("\nPress Enter to return to the menu...")
+
+
 def main_menu():
     while True:
         clear()
@@ -65,12 +93,13 @@ def main_menu():
         print("\t[8] Export to CSV")
         print("\t[9] Import from CSV")
         print("\t[10] Manage Concession Periods")
+        print("\t[D] Launch Dashboard")
         print("\t[0] Exit")
         print()
         print("\t(Type 'e' at any prompt to return to this menu)")
 
         choice = input("\tEnter your choice: ").strip()
-        
+
         try:
             if choice == "1":
                 log_trip()
@@ -92,6 +121,8 @@ def main_menu():
                 csv_import()
             elif choice == "10":
                 manage_periods()
+            elif choice.lower() == "d":
+                launch_dashboard()
             elif choice == "0":
                 print("\nGoodbye!")
                 sys.exit(0)
@@ -100,7 +131,8 @@ def main_menu():
         except SystemExit:
             raise
         except EscapeToMenu:
-                continue
+            continue
+
 
 if __name__ == "__main__":
     try:
@@ -109,5 +141,9 @@ if __name__ == "__main__":
         print_connection_error(e)
         pause_before_exit()
         sys.exit(1)
+
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ("dashboard", "--dashboard", "-d"):
+        launch_dashboard()
+        sys.exit(0)
 
     main_menu()

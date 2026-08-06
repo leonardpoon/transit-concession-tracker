@@ -1,7 +1,10 @@
 from datetime import datetime
 
 from db.queries import search_trips, update_trip
-from utils import clear, confirm_prompt, draw_table, format_date_display, header, check_escape
+from utils import (
+    clear, confirm_prompt, draw_table, format_date_display, format_trip_id,
+    header, check_escape, resolve_trip_id
+)
 
 def edit_trip():
     while True:
@@ -41,7 +44,7 @@ def edit_trip():
         rows = []
         for r in results:
             rows.append([
-                f"#{r['id']}",
+                format_trip_id(r),
                 r["mode_of_transport"],
                 r["starting_location"],
                 r["ending_location"],
@@ -56,9 +59,8 @@ def edit_trip():
         if trip_id_input == "":
             return
         
-        try:
-            trip_id = int(trip_id_input.replace("#", ""))
-        except ValueError:
+        trip_id = resolve_trip_id(results, trip_id_input)
+        if trip_id is None:
             print("\tInvalid ID.")
             input("\tPress Enter to try again...")
             continue
@@ -148,9 +150,9 @@ def edit_trip():
             return
         
         if update_trip(trip_id, new_mode, new_origin, new_dest, new_fare, new_date):
-            print(f"\n\tTrip #{trip_id} updated successfully!")
+            print(f"\n\tTrip {format_trip_id(selected)} updated successfully!")
         else:
-            print(f"\n\tCould not update trip #{trip_id}.")
+            print(f"\n\tCould not update trip {format_trip_id(selected)}.")
 
         input("\tPress Enter to go back...")
         return

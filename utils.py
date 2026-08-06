@@ -89,6 +89,22 @@ def format_date_display(trip_date):
     return dt.strftime("%a %d-%m-%Y")
 
 
+def format_trip_id(row):
+    return f"#{row.get('display_id', row['id'])}"
+
+
+def resolve_trip_id(rows, user_value):
+    raw = user_value.strip().replace("#", "")
+    if not raw.isdigit():
+        return None
+
+    entered_id = int(raw)
+    for row in rows:
+        if row.get("display_id") == entered_id or row["id"] == entered_id:
+            return row["id"]
+    return None
+
+
 def collect_dates():
     print()
     print("\tEnter dates one per line (DD-MM-YYYY).")

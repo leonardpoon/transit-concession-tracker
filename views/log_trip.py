@@ -1,7 +1,10 @@
 from datetime import date, datetime
 
-from db.queries import get_all_locations, get_recent_routes, insert_trip
-from utils import clear, draw_table, format_date_display, header, confirm_prompt, find_similar_location, check_escape
+from db.queries import get_all_locations, get_recent_routes, get_trip_display_id, insert_trip
+from utils import (
+    check_escape, clear, confirm_prompt, draw_table, find_similar_location,
+    format_date_display, header
+)
 
 
 def log_trip():
@@ -10,7 +13,6 @@ def log_trip():
     print("\tLog Single Trip")
     print("-" * 40)
 
-    # Show recent routes
     recent = get_recent_routes()
     if recent:
         print()
@@ -70,7 +72,7 @@ def _quick_log(route):
     )
 
     print()
-    print(f"\tSaved! Trip #{trip_id} on {format_date_display(trip_date)}")
+    print(f"\tSaved! Trip #{get_trip_display_id(trip_id)} on {format_date_display(trip_date)}")
     input("\n\tPress Enter to go back...")
 
 
@@ -80,7 +82,6 @@ def _manual_entry():
     print("\tManual Entry")
     print("-" * 40)
 
-    # Mode
     while True:
         mode = check_escape(input("\n\tMode of Transport (Bus/Train): ").strip().upper())
         if mode == "BUS":
@@ -94,7 +95,6 @@ def _manual_entry():
 
     locations = get_all_locations()
 
-    # Origin
     origin = check_escape(input("\tStarting Location: ").strip())
     if origin == "":
         print("\tStarting location cannot be empty.")
@@ -109,7 +109,6 @@ def _manual_entry():
                 if not confirm_prompt(f"\tSave '{origin}' as a new location? (yes/no): "):
                     return None
 
-    # Destination
     destination = check_escape(input("\tEnding Location: ").strip())
     if destination == "":
         print("\tEnding location cannot be empty.")
@@ -129,7 +128,6 @@ def _manual_entry():
         input("\tPress Enter to go back...")
         return
 
-    # Total Price
     while True:
         try:
             total_price = float(check_escape(input("\tFare ($): ").strip()))
@@ -139,14 +137,13 @@ def _manual_entry():
         except ValueError:
             print("\tPlease enter a valid amount e.g. 1.50")
 
-    # Date
     trip_date = _get_date()
     if trip_date is None:
         return
 
     trip_id = insert_trip(mode, origin, destination, total_price, trip_date)
     print()
-    print(f"\tSaved! Trip #{trip_id}")
+    print(f"\tSaved! Trip #{get_trip_display_id(trip_id)}")
     print(f"\t{mode} | {origin} -> {destination}\t|\t${total_price:.2f}\t|\t{format_date_display(trip_date)}")
     input("\n\tPress Enter to go back...")
 

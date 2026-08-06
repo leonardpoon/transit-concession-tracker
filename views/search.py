@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from db.queries import search_trips
-from utils import clear, confirm_prompt, draw_table, format_date_display, header, check_escape
+from utils import clear, confirm_prompt, draw_table, format_date_display, format_trip_id, header, check_escape
 
 def search():
     while True:
@@ -58,7 +58,7 @@ def search():
             rows = []
             for r in results:
                 rows.append([
-                    f"#{r['id']}",
+                    format_trip_id(r),
                     r["mode_of_transport"],
                     r["starting_location"],
                     r["ending_location"],

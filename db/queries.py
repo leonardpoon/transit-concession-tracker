@@ -3,6 +3,29 @@ from datetime import date, timedelta
 
 _NOCHANGE = object()
 
+
+def _trip_display_id_map(conn):
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM trips ORDER BY date ASC, id ASC")
+    display_ids = {row[0]: i for i, row in enumerate(cursor.fetchall(), 1)}
+    cursor.close()
+    return display_ids
+
+
+def _attach_display_ids(conn, rows):
+    display_ids = _trip_display_id_map(conn)
+    for row in rows:
+        row["display_id"] = display_ids.get(row["id"], row["id"])
+    return rows
+
+
+def get_trip_display_id(trip_id):
+    conn = get_connection()
+    display_ids = _trip_display_id_map(conn)
+    conn.close()
+    return display_ids.get(trip_id, trip_id)
+
+
 def insert_trip(mode_of_transport, starting_location, ending_location, total_price, date):
     conn = get_connection()
     cursor = conn.cursor()
@@ -32,6 +55,7 @@ def get_trips_by_month(year, month):
     )
 
     rows = cursor.fetchall()
+    _attach_display_ids(conn, rows)
     cursor.close()
     conn.close()
     return rows
@@ -194,11 +218,12 @@ def search_trips(query = "", mode = "", start_date = "", end_date = ""):
     cursor.execute(
         f"SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
         f"FROM trips {where} "
-        f"ORDER BY id DESC, id ASC LIMIT 100",
+        f"ORDER BY date DESC, id DESC LIMIT 100",
         params,
     )
 
     rows = cursor.fetchall()
+    _attach_display_ids(conn, rows)
     cursor.close()
     conn.close()
     return rows
@@ -229,10 +254,11 @@ def get_all_trips():
     cursor.execute(
         "SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
         "FROM trips "
-        "ORDER BY id ASC"
+        "ORDER BY date ASC, id ASC"
     )
 
     rows = cursor.fetchall()
+    _attach_display_ids(conn, rows)
     cursor.close()
     conn.close()
     return rows
@@ -271,6 +297,7 @@ def get_trips_by_cycle(start_date, end_date):
     )
 
     rows = cursor.fetchall()
+    _attach_display_ids(conn, rows)
     cursor.close()
     conn.close()
     return rows
@@ -309,6 +336,7 @@ def get_recent_trips(limit = 5):
     )
 
     rows = cursor.fetchall()
+    _attach_display_ids(conn, rows)
     cursor.close()
     conn.close()
     return rows
@@ -316,7 +344,7 @@ def get_recent_trips(limit = 5):
 def get_active_period(check_date = None):
     if check_date is None:
         check_date = date.today()
-        
+
     conn = get_connection()
     cursor = conn.cursor(dictionary = True)
     cursor.execute(
@@ -326,7 +354,7 @@ def get_active_period(check_date = None):
         "LIMIT 1",
         (check_date, check_date)
     )
-    
+
     period = cursor.fetchone()
     cursor.close()
     conn.close()

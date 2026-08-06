@@ -2,7 +2,10 @@ from datetime import date, timedelta
 
 from config import MONTHS
 from db.queries import delete_trip, get_cycle_summary, get_trips_by_cycle
-from utils import clear, draw_table, format_date_display, header, check_escape, get_current_cycle
+from utils import (
+    check_escape, clear, confirm_prompt, draw_table, format_date_display,
+    format_trip_id, get_current_cycle, header, resolve_trip_id
+)
 
 
 def monthly_summary():
@@ -53,7 +56,7 @@ def monthly_summary():
             table_rows = []
             for row in rows:
                 table_rows.append([
-                    f"#{row['id']}",
+                    format_trip_id(row),
                     row["mode_of_transport"],
                     row["starting_location"],
                     row["ending_location"],
@@ -76,3 +79,25 @@ def monthly_summary():
                 input("\tAlready on current cycle. Press Enter...")
                 continue
             cycle_start, cycle_end, threshold, label = get_current_cycle(cycle_end + timedelta(days=1))
+        elif choice == "d":
+            if not rows:
+                input("\tNo trips to delete. Press Enter...")
+                continue
+
+            trip_id_input = check_escape(
+                input("\tEnter trip ID to delete (or press Enter to cancel): ").strip()
+            )
+            if trip_id_input == "":
+                continue
+
+            trip_id = resolve_trip_id(rows, trip_id_input)
+            if trip_id is None:
+                input("\tTrip not found in this cycle. Press Enter...")
+                continue
+
+            selected = next(r for r in rows if r["id"] == trip_id)
+            if confirm_prompt(f"\tDelete {format_trip_id(selected)}? (yes/no): "):
+                if delete_trip(trip_id):
+                    input("\tTrip deleted. Press Enter...")
+                else:
+                    input("\tCould not delete trip. Press Enter...")

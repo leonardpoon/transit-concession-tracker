@@ -44,15 +44,18 @@ def load_all_trips():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
-        "SELECT id, mode_of_transport, starting_location, "
-        "ending_location, total_price, date "
-        "FROM trips ORDER BY date ASC"
+        "SELECT id, mode_of_transport, starting_location, ending_location, total_price, date "
+        "FROM trips ORDER BY date ASC, id ASC"
     )
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
 
     df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    df["display_id"]  = range(1, len(df) + 1)
     df["date"]        = pd.to_datetime(df["date"])
     df["year"]        = df["date"].dt.year
     df["month"]       = df["date"].dt.month
@@ -413,10 +416,10 @@ st.divider()
 with st.expander("View raw trip data"):
     st.dataframe(
         df_filtered[[
-            "id", "mode_of_transport", "starting_location",
+            "display_id", "mode_of_transport", "starting_location",
             "ending_location", "total_price", "date"
         ]].rename(columns={
-            "id":                "ID",
+            "display_id":        "ID",
             "mode_of_transport": "Mode of Transport",
             "starting_location": "From",
             "ending_location":   "To",
